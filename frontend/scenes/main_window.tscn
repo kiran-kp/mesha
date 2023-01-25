@@ -1,0 +1,24 @@
+[gd_scene load_steps=2 format=3 uid="uid://v4vljfq8gjnm"]
+
+[ext_resource type="Script" path="res://scripts/cell_editor.gd" id="1_vaeg6"]
+
+[node name="MainWindow" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TextEdit" type="TextEdit" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+placeholder_text = "Text editor"
+middle_mouse_paste_enabled = false
+script = ExtResource("1_vaeg6")
+
+[connection signal="text_changed" from="TextEdit" to="TextEdit" method="_on_text_changed"]
