@@ -68,10 +68,23 @@ void LispServer::shutdown() {
 }
 
 godot::String LispServer::eval(const godot::String& expr) {
-    auto str = expr.utf8();
-    auto obj = c_string_to_object(str.get_data());
-    auto res = cl_eval(obj);
-    return godot::String::num_int64(ecl_to_int64_t(res));
+    if (!expr.is_empty()) {
+        auto str = expr.utf8();
+        auto obj = c_string_to_object(str.get_data());
+        auto res = cl_eval(obj);
+        if (floatp(res)) {
+            return godot::String::num(ecl_to_float(res));
+        } else if (ecl_numberp(res)) {
+            return godot::String::num_int64(ecl_to_int64_t(res));
+        } else if (ecl_stringp(res)) {
+            char buffer[1024];
+            cl_object utf_8 = ecl_make_keyword("UTF-8");
+            ecl_encode_to_cstring(buffer, 1024, res, utf_8);
+            return godot::String(buffer);
+        }
+    }
+
+    return godot::String("Ok");
 }
 
 void LispServer::_bind_methods() {
