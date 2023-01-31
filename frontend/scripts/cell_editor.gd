@@ -1,7 +1,11 @@
 extends TextEdit
 
+var cell = null
+
 # Called when the node enters the scene tree for the first time.
 func _ready():
+	cell = $"../MeshaCell"
+	self.grab_focus()
 	pass
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -13,4 +17,6 @@ func _on_text_changed():
 	if (c == 0):
 		var t = self.text.split("\n", false)
 		if (t.size() > 0):
-			self.insert_text_at_caret(LispServer.eval(t[t.size() - 1]) + "\n")
+			var result = LispServer.eval(t[t.size() - 1])
+			self.cell.text = result
+			self.insert_text_at_caret(result + "\n")

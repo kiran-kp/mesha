@@ -19,8 +19,10 @@ extern "C" {
             return;
         }
 
-        ClassDB::register_class<LispServer>();
+        // Register all classes before constructing anything
         ClassDB::register_class<Summator>();
+        ClassDB::register_class<LispServer>();
+        ClassDB::register_class<MeshaCell>();
     
         lisp_server = memnew(LispServer);
         Engine::get_singleton()->register_singleton("LispServer", lisp_server);

@@ -4,6 +4,7 @@
 #include <godot_cpp/classes/mutex.hpp>
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/classes/ref.hpp>
+#include <godot_cpp/classes/rich_text_label.hpp>
 #include <godot_cpp/classes/thread.hpp>
 #include <godot_cpp/templates/vector.hpp>
 
@@ -27,12 +28,18 @@ protected:
     static void _bind_methods();
 
 private:
-    volatile bool thread_exited;
-    mutable bool exit_thread;
-    godot::Thread *thread;
     godot::Mutex *mutex;
 
     godot::Vector<godot::String> code_to_eval;
+};
+
+class MeshaCell : public godot::RichTextLabel {
+    GDCLASS(MeshaCell, godot::RichTextLabel);
+public:
+    MeshaCell() { }
+
+protected:
+    static void _bind_methods();
 };
 
 class Summator : public godot::RefCounted {

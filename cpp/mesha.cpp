@@ -91,6 +91,8 @@ void LispServer::_bind_methods() {
     godot::ClassDB::bind_method(godot::D_METHOD("eval", "expr"), &LispServer::eval);
 }
 
+void MeshaCell::_bind_methods() {
+}
 
 Summator::Summator() {
     count = 0;
