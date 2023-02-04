@@ -1,6 +1,7 @@
 #include "register_types.h"
 
 #include "mesha.h"
+#include "table.h"
 
 #include <gdextension_interface.h>
 
@@ -20,7 +21,6 @@ extern "C" {
         }
 
         // Register all classes before constructing anything
-        ClassDB::register_class<Summator>();
         ClassDB::register_class<LispServer>();
         ClassDB::register_class<MeshaCell>();
     

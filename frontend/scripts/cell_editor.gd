@@ -9,7 +9,7 @@ func _ready():
 	pass
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta):
+func _process(_delta):
 	pass
 
 func _on_text_changed():
@@ -18,5 +18,4 @@ func _on_text_changed():
 		var t = self.text.split("\n", false)
 		if (t.size() > 0):
 			var result = LispServer.eval(t[t.size() - 1])
-			self.cell.text = result
-			self.insert_text_at_caret(result + "\n")
+			self.cell.set_text(result)

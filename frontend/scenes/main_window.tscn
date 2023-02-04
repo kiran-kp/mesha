@@ -18,15 +18,15 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="MeshaCell" type="MeshaCell" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
 [node name="TextEdit" type="TextEdit" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
 placeholder_text = "Text editor"
 middle_mouse_paste_enabled = false
 script = ExtResource("1_vaeg6")
-
-[node name="MeshaCell" type="MeshaCell" parent="VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 3
 
 [connection signal="text_changed" from="VBoxContainer/TextEdit" to="VBoxContainer/TextEdit" method="_on_text_changed"]
