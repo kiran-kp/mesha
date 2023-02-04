@@ -90,31 +90,3 @@ godot::String LispServer::eval(const godot::String& expr) {
 void LispServer::_bind_methods() {
     godot::ClassDB::bind_method(godot::D_METHOD("eval", "expr"), &LispServer::eval);
 }
-
-void MeshaCell::_bind_methods() {
-}
-
-Summator::Summator() {
-    count = 0;
-}
-
-Summator::~Summator() {
-}
-
-void Summator::add(int p_value) {
-    count += p_value;
-}
-
-void Summator::reset() {
-    count = 0;
-}
-
-int Summator::get_total() const {
-    return count;
-}
-
-void Summator::_bind_methods() {
-    godot::ClassDB::bind_method(godot::D_METHOD("add", "value"), &Summator::add, DEFVAL(1));
-    godot::ClassDB::bind_method(godot::D_METHOD("reset"), &Summator::reset);
-    godot::ClassDB::bind_method(godot::D_METHOD("get_total"), &Summator::get_total);
-}
