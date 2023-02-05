@@ -4,7 +4,6 @@ var cell = null
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	cell = $"../MeshaCell"
 	self.grab_focus()
 	pass
 
@@ -18,4 +17,4 @@ func _on_text_changed():
 		var t = self.text.split("\n", false)
 		if (t.size() > 0):
 			var result = LispServer.eval(t[t.size() - 1])
-			self.cell.set_text(result)
+			self.insert_text_at_caret(result + "\n")
