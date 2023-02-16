@@ -12,33 +12,39 @@
 
 using namespace godot;
 
-static LispServer *lisp_server = nullptr;
+static MeshaServer *mesha_server = nullptr;
 
 extern "C" {
     void initialize_mesha_module(ModuleInitializationLevel p_level) {
-        if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
-            return;
+        switch (p_level) {
+        case MODULE_INITIALIZATION_LEVEL_SERVERS:
+            GDREGISTER_CLASS(MeshaServer);
+
+            mesha_server = memnew(MeshaServer);
+            Engine::get_singleton()->register_singleton("MeshaServer", mesha_server);
+
+            mesha_server->init();
+            break;
+        case MODULE_INITIALIZATION_LEVEL_SCENE:
+            GDREGISTER_CLASS(MeshaCell);
+            break;
+        default:
+            break;
         }
 
         // Register all classes before constructing anything
-        ClassDB::register_class<LispServer>();
-        ClassDB::register_class<MeshaCell>();
     
-        lisp_server = memnew(LispServer);
-        Engine::get_singleton()->register_singleton("LispServer", lisp_server);
-
-        lisp_server->init();
     }
 
     void uninitialize_mesha_module(ModuleInitializationLevel p_level) {
-        if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
+        if (p_level != MODULE_INITIALIZATION_LEVEL_SERVERS) {
             return;
         }
 
-        if (lisp_server) {
-            lisp_server->shutdown();
-            memfree(lisp_server);
-            lisp_server = nullptr;
+        if (mesha_server) {
+            mesha_server->shutdown();
+            memfree(mesha_server);
+            mesha_server = nullptr;
         }
     }
 
@@ -49,7 +55,7 @@ extern "C" {
 
 		init_obj.register_initializer(initialize_mesha_module);
 		init_obj.register_terminator(uninitialize_mesha_module);
-		init_obj.set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_SCENE);
+		init_obj.set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_SERVERS);
 
 		return init_obj.init();
 	}

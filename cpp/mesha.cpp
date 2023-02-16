@@ -13,23 +13,23 @@ extern "C" {
 static const char* lisp_argv = "Mesha";
 static char** lisp_pargv;
 
-LispServer *LispServer::singleton = nullptr;
+MeshaServer *MeshaServer::singleton = nullptr;
 
 void run_slynk() {
 	cl_object start_server = c_string_to_object("(mesha-bootstrap:start-server)");
 	cl_eval(start_server);
 }
 
-LispServer::LispServer() {
+MeshaServer::MeshaServer() {
     assert(singleton == nullptr);
     singleton = this;
 }
 
-LispServer *LispServer::get_singleton() {
+MeshaServer *MeshaServer::get_singleton() {
     return singleton;
 }
 
-godot::Error LispServer::init() {
+godot::Error MeshaServer::init() {
     mutex = memnew(godot::Mutex);
 	lisp_pargv = const_cast<char**>(&lisp_argv);
 
@@ -49,17 +49,17 @@ godot::Error LispServer::init() {
     return godot::OK;
 }
 
-void LispServer::unlock() {
+void MeshaServer::unlock() {
     assert(mutex);
     mutex->unlock();
 }
 
-void LispServer::lock() {
+void MeshaServer::lock() {
     assert(mutex);
     mutex->lock();
 }
 
-void LispServer::shutdown() {
+void MeshaServer::shutdown() {
     assert(mutex);
 
     cl_shutdown();
@@ -67,7 +67,7 @@ void LispServer::shutdown() {
     mutex = nullptr;
 }
 
-godot::String LispServer::eval(const godot::String& expr) {
+godot::String MeshaServer::eval(const godot::String& expr) {
     if (!expr.is_empty()) {
         auto str = expr.utf8();
         auto obj = c_string_to_object(str.get_data());
@@ -87,6 +87,6 @@ godot::String LispServer::eval(const godot::String& expr) {
     return godot::String("Ok");
 }
 
-void LispServer::_bind_methods() {
-    godot::ClassDB::bind_method(godot::D_METHOD("eval", "expr"), &LispServer::eval);
+void MeshaServer::_bind_methods() {
+    godot::ClassDB::bind_method(godot::D_METHOD("eval", "expr"), &MeshaServer::eval);
 }

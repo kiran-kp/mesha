@@ -16,5 +16,5 @@ func _on_text_changed():
 	if (c == 0):
 		var t = self.text.split("\n", false)
 		if (t.size() > 0):
-			var result = LispServer.eval(t[t.size() - 1])
+			var result = MeshaServer.eval(t[t.size() - 1])
 			self.insert_text_at_caret(result + "\n")

@@ -7,16 +7,16 @@
 #include <godot_cpp/classes/thread.hpp>
 #include <godot_cpp/templates/vector.hpp>
 
-class LispServer : public godot::Object {
-    GDCLASS(LispServer, godot::Object);
+class MeshaServer : public godot::Object {
+    GDCLASS(MeshaServer, godot::Object);
 
-    static LispServer *singleton;
-
-public:
-    static LispServer *get_singleton();
+    static MeshaServer *singleton;
 
 public:
-    LispServer();
+    static MeshaServer *get_singleton();
+
+public:
+    MeshaServer();
     godot::Error init();
     void lock();
     void unlock();
