@@ -14,7 +14,7 @@ env = SConscript("../extern/godot-cpp/SConstruct")
 
 env.Append(CXXFLAGS=["-Wno-deprecated-builtins"])
 env.Append(CPPPATH=['../build/include'])
-env.Append(LIBPATH=['../build/lib', '../build'])
+env.Append(LIBPATH=['../build/lib', '../build', '../frontend/bin'])
 env.Append(LIBS=['ecl', 'mesha-bootstrap'])
 env.Append(RPATH=[Literal("\$$ORIGIN:.")])
 
@@ -25,9 +25,9 @@ output_name = "../frontend/bin/libmesha{}{}".format(env["suffix"], env["SHLIBSUF
 
 if env["platform"] == "macos":
     output_name = "../frontend/bin/libmesha.{}.{}.framework/libmesha.{}.{}".format(env["platform"],
-                                                                                 env["target"],
-                                                                                 env["platform"],
-                                                                                 env["target"])
+                                                                                   env["target"],
+                                                                                   env["platform"],
+                                                                                   env["target"])
 
 extension_library = env.SharedLibrary(output_name, source=sources)
 
