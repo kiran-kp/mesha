@@ -17,16 +17,14 @@ static MeshaServer *mesha_server = nullptr;
 extern "C" {
     void initialize_mesha_module(ModuleInitializationLevel p_level) {
         switch (p_level) {
-        case MODULE_INITIALIZATION_LEVEL_SERVERS:
+        case MODULE_INITIALIZATION_LEVEL_SCENE:
+            GDREGISTER_CLASS(MeshaCell);
             GDREGISTER_CLASS(MeshaServer);
 
             mesha_server = memnew(MeshaServer);
             Engine::get_singleton()->register_singleton("MeshaServer", mesha_server);
 
             mesha_server->init();
-            break;
-        case MODULE_INITIALIZATION_LEVEL_SCENE:
-            GDREGISTER_CLASS(MeshaCell);
             break;
         default:
             break;
@@ -37,7 +35,7 @@ extern "C" {
     }
 
     void uninitialize_mesha_module(ModuleInitializationLevel p_level) {
-        if (p_level != MODULE_INITIALIZATION_LEVEL_SERVERS) {
+        if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
             return;
         }
 
@@ -55,7 +53,7 @@ extern "C" {
 
 		init_obj.register_initializer(initialize_mesha_module);
 		init_obj.register_terminator(uninitialize_mesha_module);
-		init_obj.set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_SERVERS);
+		init_obj.set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_SCENE);
 
 		return init_obj.init();
 	}
