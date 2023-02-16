@@ -7,7 +7,8 @@
 
 #include <godot_cpp/core/class_db.hpp>
 
-MeshaValue::MeshaValue() : _type(MeshaValueType::None) {
+MeshaValue::MeshaValue() : _type(MeshaValueType::None)
+                         , integer_value(0) {
 }
 
 MeshaValue::~MeshaValue() {
