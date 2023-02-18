@@ -10,8 +10,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MainView" type="CanvasLayer" parent="."]
-
 [node name="InputBox" type="TextEdit" parent="."]
 layout_mode = 1
 anchors_preset = 12
@@ -25,5 +23,10 @@ size_flags_vertical = 3
 placeholder_text = "Enter some lisp here..."
 middle_mouse_paste_enabled = false
 script = ExtResource("1_vaeg6")
+
+[node name="MainView" type="HBoxContainer" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
 
 [connection signal="text_changed" from="InputBox" to="InputBox" method="_on_text_changed"]

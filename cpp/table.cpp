@@ -42,6 +42,10 @@ void MeshaCell::set_text(const String& s) {
     queue_redraw();
 }
 
+Vector2 MeshaCell::_get_minimum_size() const {
+    return Size2(20.0f, 20.0f);
+}
+
 void MeshaCell::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {

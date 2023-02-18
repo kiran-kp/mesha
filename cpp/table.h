@@ -41,6 +41,7 @@ public:
     MeshaCell();
     virtual ~MeshaCell();
     void set_text(const String& s);
+    virtual Vector2 _get_minimum_size() const override;
 
 private:
     void draw();
