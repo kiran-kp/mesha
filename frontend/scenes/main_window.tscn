@@ -24,9 +24,10 @@ placeholder_text = "Enter some lisp here..."
 middle_mouse_paste_enabled = false
 script = ExtResource("1_vaeg6")
 
-[node name="MainView" type="HBoxContainer" parent="."]
+[node name="MainView" type="GridContainer" parent="."]
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
+columns = 4
 
 [connection signal="text_changed" from="InputBox" to="InputBox" method="_on_text_changed"]

@@ -20,10 +20,9 @@ func _on_text_changed():
 		var t = self.text.split("\n", false)
 		if (t.size() > 0):
 			var result = MeshaServer.eval(t[t.size() - 1])
-			var m = MeshaCell.new()
-			self.view.add_child(m)
-			const cell_size := 100
-			# m.set_global_position(Vector2(cell_size * (self.index % self.cols), cell_size *(self.index / self.cols)))
+			var container = PanelContainer.new()
+			var m = Label.new()
+			container.add_child(m)
+			self.view.add_child(container)
 			m.set_text(result)
-			# m.size = Vector2(cell_size, cell_size)
 			self.insert_text_at_caret(result + "\n")
