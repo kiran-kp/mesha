@@ -15,7 +15,7 @@ env = SConscript("../extern/godot-cpp/SConstruct")
 env.Append(CXXFLAGS=["-Wno-deprecated-builtins"])
 env.Append(CPPPATH=['../build/include'])
 env.Append(LIBPATH=['../build/lib', '../build', '../frontend/bin'])
-env.Append(LIBS=['ecl', 'mesha-bootstrap'])
+env.Append(LIBS=['ecl', 'mesha-core'])
 env.Append(RPATH=[Literal("\$$ORIGIN:.")])
 
 # env.Append(CPPPATH=['./'])

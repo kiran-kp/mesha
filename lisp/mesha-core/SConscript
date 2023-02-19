@@ -2,13 +2,13 @@ ecl_path = File('#build/bin/ecl').abspath
 cache_path = Dir('#build/cache/ecl').abspath
 lisp_path = Dir('#lisp/').abspath
 build_path = Dir('#build/').abspath
-target_path = File('#frontend/bin/libmesha-bootstrap.so').abspath
-source_path = File('#lisp/mesha-bootstrap/mesha-bootstrap--all-systems.so').abspath
+target_path = File('#frontend/bin/libmesha-core.so').abspath
+source_path = File('#lisp/mesha-core/mesha-core--all-systems.so').abspath
 
 asdf_registry_config = f"'(:source-registry (:tree \\\"{lisp_path}\\\") :inherit-configuration)"
 
-asdf_make_args = ':type :shared-library :monolithic t :init-name \\"init_mesha_bootstrap\\" :prologue-code \'(require :ecl-quicklisp)'
-asdf_command = f"(asdf:make-build :mesha-bootstrap {asdf_make_args})"
+asdf_make_args = ':type :shared-library :monolithic t :init-name \\"init_mesha_core\\" :prologue-code \'(require :ecl-quicklisp)'
+asdf_command = f"(asdf:make-build :mesha-core {asdf_make_args})"
 
 command = (f"{ecl_path} " +
            '--eval "(require \'asdf)" ' +
@@ -20,10 +20,10 @@ command = (f"{ecl_path} " +
 bld = Builder(action=[command,
                       Move(target_path, source_path)])
 
-env = Environment(BUILDERS={'LispBootstrap': bld})
+env = Environment(BUILDERS={'LispCore': bld})
 
-lisp_bootstrap = env.LispBootstrap('mesha-bootstrap', 'mesha-bootstrap.asd')
-env.Alias('lisp', lisp_bootstrap)
+lisp_core = env.LispCore('mesha-core', 'mesha-core.asd')
+env.Alias('lisp', lisp_core)
 
 
 

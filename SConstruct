@@ -8,4 +8,4 @@ if scons_cache_path != None:
     print("Scons cache enabled... (path: '" + scons_cache_path + "')")
 
 SConscript(['cpp/SConscript',
-            'lisp/mesha-bootstrap/SConscript'])
+            'lisp/mesha-core/SConscript'])

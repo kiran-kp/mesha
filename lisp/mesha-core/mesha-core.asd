@@ -1,7 +1,7 @@
-;;;; mesha-bootstrap.asd
+;;;; mesha-core.asd
 
-(asdf:defsystem #:mesha-bootstrap
-  :description "Lisp bootstrap code for Mesha"
+(asdf:defsystem #:mesha-core
+  :description "Lisp bootstrap code for Mesha and C++ interface."
   :author "Kiran <projects@kirankp.com>"
   :license  ""
   :version "0.0.1"

@@ -25,4 +25,3 @@ func _on_text_changed():
 			container.add_child(m)
 			self.view.add_child(container)
 			m.set_text(result)
-			self.insert_text_at_caret(result + "\n")
