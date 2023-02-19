@@ -7,3 +7,6 @@
 [submodule "extern/sly"]
 	path = extern/sly
 	url = https://github.com/joaotavora/sly
+[submodule "extern/sockpp"]
+	path = extern/sockpp
+	url = https://github.com/fpagliughi/sockpp
