@@ -7,5 +7,4 @@ if scons_cache_path != None:
     CacheDir(scons_cache_path)
     print("Scons cache enabled... (path: '" + scons_cache_path + "')")
 
-SConscript(['cpp/SConscript',
-            'lisp/mesha-core/SConscript'])
+SConscript(['cpp/SConscript'])
