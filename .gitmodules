@@ -4,3 +4,6 @@
 [submodule "extern/sockpp"]
 	path = extern/sockpp
 	url = https://github.com/fpagliughi/sockpp
+[submodule "extern/flatbuffers"]
+	path = extern/flatbuffers
+	url = https://github.com/google/flatbuffers
