@@ -1,29 +1,60 @@
 (in-package #:mesha)
 
 (defclass application ()
-  ((listen-socket :initform nil)))
+  ((listen-socket :initform nil)
+   (connection-socket :initform nil)))
 
 (defvar *app-state* nil)
 
+(cffi:define-foreign-library libmesha-networking
+  (:unix "/home/kiran/projects/mesha/build/libmesha_networking.so")
+  (t (:default "libmesha_networking")))
+
+(cffi:defcfun ("mesha_networking_create_server" mesha-networking-create-server) :uintptr
+  (host :string)
+  (port :uint16))
+
+(cffi:defcfun ("mesha_networking_accept_connection" mesha-networking-accept-connection) :uintptr
+  (listener :uintptr))
+
+(cffi:defcfun ("mesha_networking_close_listener" mesha-networking-close-listener) :uintptr
+  (listener :uintptr))
+
+(cffi:defcfun ("mesha_networking_close_connection" mesha-networking-close-connection) :uintptr
+  (connection :uintptr))
+
+(cffi:defcfun ("mesha_networking_read_message" mesha-networking-read-message) :uintptr
+  (connection :uintptr))
+
+(cffi:defcfun ("mesha_networking_free_message" mesha-networking-free-message) :void
+  (connection :uintptr))
+
+(cffi:defcfun ("mesha_networking_get_message_type" mesha-networking-get-message-type) :uint8
+  (msg :uintptr))
+
+(cffi:defcfun ("mesha_networking_send_s2cgreeting" mesha-networking-send-s2cgreeting) :void
+  (connection :uintptr)
+  (secret :string))
+
 (defun create-server (port)
   (with-slots (listen-socket) *app-state*
-    (setf listen-socket (usocket:socket-listen "0.0.0.0" port :reuse-address t))
-    (let ((connection (usocket:socket-accept listen-socket :element-type 'character)))
+    (setf listen-socket (mesha-networking-create-server "0.0.0.0" port))
+    (let* ((connection (mesha-networking-accept-connection listen-socket))
+           (msg (mesha-networking-read-message connection)))
       (unwind-protect
            (progn
-             (usocket:wait-for-input connection)
-             (log:info "Connected. Waiting for message")
-             (format t "Received: ~a~%" (read-line (usocket:socket-stream connection)))
-             (log:info "Sending data")
-             (format (usocket:socket-stream connection) "Hello World~%")
-             (force-output (usocket:socket-stream connection))
-             (log:info "Sent data"))
+             (log:info "Received ~a" (mesha-networking-get-message-type msg))
+             (mesha-networking-send-s2cgreeting connection "ACK"))
         (progn
           (log:info "Closing sockets")
-          (usocket:socket-close connection)
-          (usocket:socket-close listen-socket))))))
+          (mesha-networking-free-message msg)
+          (mesha-networking-close-connection connection)
+          (mesha-networking-close-listener listen-socket))))))
 
 (defun main ()
   (log:info "Starting Mesha")
+  (unless (cffi:foreign-library-loaded-p 'libmesha-networking)
+    (cffi:use-foreign-library libmesha-networking))
+
   (setf *app-state* (make-instance 'application))
   (create-server 10977))

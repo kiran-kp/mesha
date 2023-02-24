@@ -1,0 +1,31 @@
+namespace Mesha;
+
+union MessageType {
+    C2SGreeting,
+    S2CGreetingResponse
+}
+
+struct Vec3 {
+    x: float;
+    y: float;
+    z: float;
+}
+
+struct Vec2 {
+    x: float;
+    y: float;
+}
+
+table Message {
+    msg_data: MessageType;
+}
+
+table C2SGreeting {
+    secret: string;
+}
+
+table S2CGreetingResponse {
+    secret: string;
+}
+
+root_type Message;

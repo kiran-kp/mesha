@@ -2,20 +2,8 @@
 import os
 import sys
 
-env = SConscript("../extern/godot-cpp/SConstruct")
-
-# For the reference:
-# - CCFLAGS are compilation flags shared between C and C++
-# - CFLAGS are for C-specific compilation flags
-# - CXXFLAGS are for C++-specific compilation flags
-# - CPPFLAGS are for pre-processor flags
-# - CPPDEFINES are for pre-processor defines
-# - LINKFLAGS are for linking flags
-
-env.Append(CPPPATH=['../extern/sockpp/include/'])
-# env.Append(RPATH=[Literal("\$$ORIGIN:.")])
-
-sources = Glob("*.cpp")
+env = Environment(CPPPATH=['../extern/sockpp/include/', '../extern/flatbuffers/include/', '../gen/'])
+sources = ['mesha_networking.cpp']
 sources.append('../extern/sockpp/src/acceptor.cpp')
 sources.append('../extern/sockpp/src/connector.cpp')
 sources.append('../extern/sockpp/src/datagram_socket.cpp')
@@ -25,9 +13,37 @@ sources.append('../extern/sockpp/src/inet6_address.cpp')
 sources.append('../extern/sockpp/src/result.cpp')
 sources.append('../extern/sockpp/src/socket.cpp')
 sources.append('../extern/sockpp/src/stream_socket.cpp')
-
 sources.append('../extern/sockpp/src/unix/unix_address.cpp')
 
+networking_library = env.SharedLibrary('#build/libmesha_networking.so', source=sources)
+env.Alias('messages', networking_library)
+env.Alias('networking', networking_library)
+
+env = SConscript("../extern/godot-cpp/SConstruct")
+
+# For reference:
+# - CCFLAGS are compilation flags shared between C and C++
+# - CFLAGS are for C-specific compilation flags
+# - CXXFLAGS are for C++-specific compilation flags
+# - CPPFLAGS are for pre-processor flags
+# - CPPDEFINES are for pre-processor defines
+# - LINKFLAGS are for linking flags
+
+env.Append(CPPPATH=['../extern/sockpp/include/', '../extern/flatbuffers/include/', '../gen/'])
+
+sources = Glob("*.cpp", exclude=['mesha_networking.cpp'])
+sources.append('mesha_networking.os')
+sources.append('../extern/sockpp/src/acceptor.os')
+sources.append('../extern/sockpp/src/connector.os')
+sources.append('../extern/sockpp/src/datagram_socket.os')
+sources.append('../extern/sockpp/src/exception.os')
+sources.append('../extern/sockpp/src/inet_address.os')
+sources.append('../extern/sockpp/src/inet6_address.os')
+sources.append('../extern/sockpp/src/result.os')
+sources.append('../extern/sockpp/src/socket.os')
+sources.append('../extern/sockpp/src/stream_socket.os')
+
+sources.append('../extern/sockpp/src/unix/unix_address.os')
 
 output_name = "../frontend/bin/libmesha{}{}".format(env["suffix"], env["SHLIBSUFFIX"])
 

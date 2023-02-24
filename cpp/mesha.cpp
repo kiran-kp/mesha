@@ -1,16 +1,18 @@
 #include "mesha.h"
 
+#include "mesha_networking.h"
+
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/templates/vector.hpp>
 #include <godot_cpp/variant/callable.hpp>
 
-#include <sockpp/tcp_connector.h>
+#include <assert.h>
 
 MeshaServer *MeshaServer::singleton = nullptr;
 
 MeshaServer::MeshaServer() {
-    // assert(singleton == nullptr);
+    assert(singleton == nullptr);
     singleton = this;
 }
 
@@ -19,41 +21,34 @@ MeshaServer *MeshaServer::get_singleton() {
 }
 
 godot::Error MeshaServer::init() {
-    mutex = memnew(godot::Mutex);
+    m_mutex = memnew(godot::Mutex);
 
-    sockpp::initialize();
+    mesha_networking_init();
+    m_server_connection = mesha_networking_connect("127.0.0.1", 10977);
 
-    sockpp::tcp_connector conn({"127.0.0.1", 10977}, std::chrono::seconds{5});
-	if (conn) {
+	if (m_server_connection) {
         printf("\nMesha - Connected!\n");
-        godot::Vector<uint8_t> data { 'A', 'C', 'K', '\n' };
-        data.resize(20);
-        conn.write(data.ptrw(), 4);
-        auto bytes_read = conn.read(data.ptrw(), 20);
-        printf("\n Mesha - %d bytes received\n", bytes_read);
-        for (int i = 0; i < data.size(); i++) {
-            printf("%c(%d) ", data[i], data[i]);
-        }
+        mesha_networking_send_c2sgreeting(m_server_connection, "Mesha#1337");
+        auto msg = mesha_networking_read_message(m_server_connection);
+        printf("\nMesha - Got message: %d\n", mesha_networking_get_message_type(msg));
+        mesha_networking_free_message(msg);
+        fflush(stdout);
 	}
 
     return godot::OK;
 }
 
 void MeshaServer::unlock() {
-    // assert(mutex);
-    mutex->unlock();
+    m_mutex->unlock();
 }
 
 void MeshaServer::lock() {
-    // assert(mutex);
-    mutex->lock();
+    m_mutex->lock();
 }
 
 void MeshaServer::shutdown() {
-    // assert(mutex);
-
-    memdelete(mutex);
-    mutex = nullptr;
+    memdelete(m_mutex);
+    m_mutex = nullptr;
 }
 
 godot::String MeshaServer::eval(const godot::String& expr) {

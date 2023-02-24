@@ -27,8 +27,8 @@ protected:
     static void _bind_methods();
 
 private:
-    godot::Mutex *mutex;
-    godot::Vector<godot::String> code_to_eval;
+    godot::Mutex *m_mutex;
+    uintptr_t m_server_connection;
 };
 
 #endif // MESHA_H

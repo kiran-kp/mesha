@@ -13,5 +13,5 @@
   :components ((:file "package")
                (:file "main"))
   :depends-on (#:asdf
-               #:log4cl
-               #:usocket))
+               #:cffi
+               #:log4cl))
