@@ -10,6 +10,8 @@
   (:unix "/home/kiran/projects/mesha/build/libmesha_networking.so")
   (t (:default "libmesha_networking")))
 
+(cffi:use-foreign-library libmesha-networking)
+
 (cffi:defcfun ("mesha_networking_create_server" mesha-networking-create-server) :uintptr
   (host :string)
   (port :uint16))
@@ -56,8 +58,5 @@
 
 (defun main ()
   (log:info "Starting Mesha")
-  (unless (cffi:foreign-library-loaded-p 'libmesha-networking)
-    (cffi:use-foreign-library libmesha-networking))
-
   (setf *app-state* (make-instance 'application))
   (create-server 10977))
