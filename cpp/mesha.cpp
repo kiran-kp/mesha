@@ -30,7 +30,7 @@ godot::Error MeshaServer::init() {
         printf("\nMesha - Connected!\n");
         mesha_networking_send_c2sgreeting(m_server_connection, "Mesha#1337");
         auto msg = mesha_networking_read_message(m_server_connection);
-        printf("\nMesha - Got message: %d\n", mesha_networking_get_message_type(msg));
+        printf("\nMesha - Got message: %s\n", mesha_networking_s2cgreeting_response_get_secret(msg));
         mesha_networking_free_message(msg);
         fflush(stdout);
 	}

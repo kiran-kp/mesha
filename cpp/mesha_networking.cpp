@@ -6,6 +6,7 @@
 #include <sockpp/tcp_acceptor.h>
 #include <sockpp/tcp_connector.h>
 
+#include <assert.h>
 #include <vector>
 
 extern "C" {
@@ -40,32 +41,6 @@ extern "C" {
         delete socket;
     }
 
-    void mesha_networking_send_c2sgreeting(uintptr_t socket_ptr, const char *secret) {
-        flatbuffers::FlatBufferBuilder builder;
-        auto secret_string = builder.CreateString(secret);
-        auto message_data = Mesha::CreateC2SGreeting(builder, secret_string).Union();
-        auto message_root = Mesha::CreateMessage(builder, Mesha::MessageType_C2SGreeting, message_data);
-        builder.Finish(message_root);
-
-        uint32_t num_bytes = builder.GetSize();
-        auto socket = reinterpret_cast<sockpp::tcp_connector*>(socket_ptr);
-        socket->write(&num_bytes, sizeof(uint32_t));
-        socket->write(builder.GetBufferPointer(), num_bytes);
-    }
-
-    void mesha_networking_send_s2cgreeting(uintptr_t socket_ptr, const char *secret) {
-        flatbuffers::FlatBufferBuilder builder;
-        auto secret_string = builder.CreateString(secret);
-        auto message_data = Mesha::CreateS2CGreetingResponse(builder, secret_string).Union();
-        auto message_root = Mesha::CreateMessage(builder, Mesha::MessageType_S2CGreetingResponse, message_data);
-        builder.Finish(message_root);
-
-        uint32_t num_bytes = builder.GetSize();
-        auto socket = reinterpret_cast<sockpp::tcp_connector*>(socket_ptr);
-        socket->write(&num_bytes, sizeof(uint32_t));
-        socket->write(builder.GetBufferPointer(), num_bytes);
-    }
-
     uintptr_t mesha_networking_read_message(uintptr_t socket_ptr) {
         auto socket = reinterpret_cast<sockpp::tcp_connector*>(socket_ptr);
         uint32_t num_bytes = 0;
@@ -91,5 +66,42 @@ extern "C" {
         }
 
         return 0;
+    }
+    void mesha_networking_send_c2sgreeting(uintptr_t socket_ptr, const char *secret) {
+        flatbuffers::FlatBufferBuilder builder;
+        auto secret_string = builder.CreateString(secret);
+        auto message_data = Mesha::CreateC2SGreeting(builder, secret_string).Union();
+        auto message_root = Mesha::CreateMessage(builder, Mesha::MessageType_C2SGreeting, message_data);
+        builder.Finish(message_root);
+
+        uint32_t num_bytes = builder.GetSize();
+        auto socket = reinterpret_cast<sockpp::tcp_connector*>(socket_ptr);
+        socket->write(&num_bytes, sizeof(uint32_t));
+        socket->write(builder.GetBufferPointer(), num_bytes);
+    }
+
+    void mesha_networking_send_s2cgreeting_response(uintptr_t socket_ptr, const char *secret) {
+        flatbuffers::FlatBufferBuilder builder;
+        auto secret_string = builder.CreateString(secret);
+        auto message_data = Mesha::CreateS2CGreetingResponse(builder, secret_string).Union();
+        auto message_root = Mesha::CreateMessage(builder, Mesha::MessageType_S2CGreetingResponse, message_data);
+        builder.Finish(message_root);
+
+        uint32_t num_bytes = builder.GetSize();
+        auto socket = reinterpret_cast<sockpp::tcp_connector*>(socket_ptr);
+        socket->write(&num_bytes, sizeof(uint32_t));
+        socket->write(builder.GetBufferPointer(), num_bytes);
+    }
+
+    const char *mesha_networking_c2sgreeting_get_secret(uintptr_t message_ptr) {
+        assert(message_ptr);
+        const auto msg = Mesha::GetMessage(reinterpret_cast<uint8_t *>(message_ptr));
+        return msg->msg_data_as_C2SGreeting()->secret()->c_str();
+    }
+
+    const char *mesha_networking_s2cgreeting_response_get_secret(uintptr_t message_ptr) {
+        assert(message_ptr);
+        const auto msg = Mesha::GetMessage(reinterpret_cast<uint8_t *>(message_ptr));
+        return msg->msg_data_as_S2CGreetingResponse()->secret()->c_str();
     }
 }

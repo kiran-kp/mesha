@@ -32,9 +32,12 @@
 (cffi:defcfun ("mesha_networking_get_message_type" mesha-networking-get-message-type) :uint8
   (msg :uintptr))
 
-(cffi:defcfun ("mesha_networking_send_s2cgreeting" mesha-networking-send-s2cgreeting) :void
+(cffi:defcfun ("mesha_networking_send_s2cgreeting_response" mesha-networking-send-s2cgreeting-response) :void
   (connection :uintptr)
   (secret :string))
+
+(cffi:defcfun ("mesha_networking_c2sgreeting_get_secret" mesha-networking-c2sgreeting-get-secret) :string
+  (msg :uintptr))
 
 (defun create-server (port)
   (with-slots (listen-socket) *app-state*
@@ -43,8 +46,8 @@
            (msg (mesha-networking-read-message connection)))
       (unwind-protect
            (progn
-             (log:info "Received ~a" (mesha-networking-get-message-type msg))
-             (mesha-networking-send-s2cgreeting connection "ACK"))
+             (log:info "Received ~a" (mesha-networking-c2sgreeting-get-secret msg))
+             (mesha-networking-send-s2cgreeting-response connection "ACK"))
         (progn
           (log:info "Closing sockets")
           (mesha-networking-free-message msg)
