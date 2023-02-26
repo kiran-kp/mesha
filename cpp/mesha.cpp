@@ -24,7 +24,7 @@ godot::Error MeshaServer::init() {
     m_mutex = memnew(godot::Mutex);
 
     mesha_networking_init();
-    m_server_connection = mesha_networking_connect("127.0.0.1", 10977);
+    m_server_connection = mesha_networking_connect("127.0.0.1", 10987);
 
 	if (m_server_connection) {
         printf("\nMesha - Connected!\n");
@@ -32,6 +32,7 @@ godot::Error MeshaServer::init() {
         auto msg = mesha_networking_read_message(m_server_connection);
         printf("\nMesha - Got message: %s\n", mesha_networking_s2cgreeting_response_get_secret(msg));
         mesha_networking_free_message(msg);
+        mesha_networking_close_connection(m_server_connection);
         fflush(stdout);
 	}
 

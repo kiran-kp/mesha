@@ -11,6 +11,8 @@
   :build-pathname "../mesha"
   :entry-point "mesha:main"
   :components ((:file "package")
+               (:file "net-sys")
+               (:file "net")
                (:file "main"))
   :depends-on (#:asdf
                #:cffi
