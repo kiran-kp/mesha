@@ -15,5 +15,6 @@
                (:file "net")
                (:file "main"))
   :depends-on (#:asdf
+               #:bordeaux-threads
                #:cffi
                #:log4cl))

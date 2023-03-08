@@ -16,6 +16,7 @@ extern "C" {
 
     uintptr_t mesha_networking_create_server(const char *host, uint16_t port) {
         auto listener = new sockpp::tcp_acceptor(sockpp::inet_address(host, port));
+        listener->set_non_blocking(false);
         return reinterpret_cast<uintptr_t>(listener);
     }
 
@@ -27,12 +28,17 @@ extern "C" {
     uintptr_t mesha_networking_accept_connection(uintptr_t listener_ptr) {
         auto listener = reinterpret_cast<sockpp::tcp_acceptor*>(listener_ptr);
         auto sock = listener->accept();
+
         auto sock_ptr = new sockpp::tcp_socket(std::move(sock));
+        sock_ptr->set_non_blocking(false);
+        sock_ptr->read_timeout(std::chrono::microseconds(100));
         return reinterpret_cast<uintptr_t>(sock_ptr);
     }
 
     uintptr_t mesha_networking_connect(const char *host, uint16_t port) {
         auto connector = new sockpp::tcp_connector(sockpp::inet_address(host, port));
+        connector->set_non_blocking(false);
+        connector->read_timeout(std::chrono::microseconds(100));
         return reinterpret_cast<uintptr_t>(connector);
     }
 
@@ -44,15 +50,18 @@ extern "C" {
     uintptr_t mesha_networking_read_message(uintptr_t socket_ptr) {
         auto socket = reinterpret_cast<sockpp::tcp_connector*>(socket_ptr);
         uint32_t num_bytes = 0;
-        socket->read(&num_bytes, sizeof(uint32_t));
-
-        if (num_bytes) {
+        auto result = socket->read_n_r(&num_bytes, sizeof(uint32_t));
+        if (result.is_ok() && num_bytes) {
             uint8_t *data = new uint8_t[num_bytes];
-            socket->read(data, num_bytes);
-            return reinterpret_cast<uintptr_t>(data);
+            result = socket->read_n_r(data, num_bytes);
+            if (result.is_ok()) {
+                return reinterpret_cast<uintptr_t>(data);
+            }
+
+            delete[] data;
         }
 
-        return 0;
+        return static_cast<uintptr_t>((result.is_ok() || (result.is_err() && result.error() == ETIMEDOUT)) ? 0 : -1);
     }
 
     void mesha_networking_free_message(uintptr_t message_ptr) {

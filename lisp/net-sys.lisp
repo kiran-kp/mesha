@@ -23,7 +23,7 @@
   (connection :uintptr))
 
 (cffi:defcfun ("mesha_networking_free_message" free-message) :void
-  (connection :uintptr))
+  (msg :uintptr))
 
 (cffi:defcfun ("mesha_networking_get_message_type" get-message-type) :uint8
   (msg :uintptr))

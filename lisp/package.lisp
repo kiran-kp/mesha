@@ -12,12 +12,17 @@
 
 (defpackage :net
   (:use #:cl)
-  (:export #:make-server
+  (:export #:server
+           #:message
+           #:message-type
+           #:make-server
            #:shutdown-server
+           #:with-server
            #:wait-for-client-connection
            #:close-client-connection
+           #:with-connection
            #:read-message
-           #:send-server-greeting))
+           #:send-server-greeting-response))
 
 (defpackage :mesha
   (:use #:cl)

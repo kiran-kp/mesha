@@ -24,7 +24,7 @@ godot::Error MeshaServer::init() {
     m_mutex = memnew(godot::Mutex);
 
     mesha_networking_init();
-    m_server_connection = mesha_networking_connect("127.0.0.1", 10987);
+    m_server_connection = mesha_networking_connect("127.0.0.1", 10988);
 
 	if (m_server_connection) {
         printf("\nMesha - Connected!\n");
@@ -40,14 +40,18 @@ godot::Error MeshaServer::init() {
 }
 
 void MeshaServer::unlock() {
+    assert(m_mutex);
     m_mutex->unlock();
 }
 
 void MeshaServer::lock() {
+    assert(m_mutex);
     m_mutex->lock();
 }
 
 void MeshaServer::shutdown() {
+    assert(singleton == this);
+    assert(m_mutex);
     memdelete(m_mutex);
     m_mutex = nullptr;
 }
