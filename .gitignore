@@ -198,3 +198,6 @@ godot.creator.*
 compile_commands.json
 
 *.import
+
+!gen
+gen/*.h

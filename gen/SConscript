@@ -1,0 +1,7 @@
+env = Environment()
+bld = Builder(action='build/extern/flatbuffers/flatc -o gen --cpp $SOURCE')
+env.Append(BUILDERS={'FlatbuffersSchema': bld})
+messages_schema = env.FlatbuffersSchema('message_generated.h', '#schema/message.fbs')
+env.Alias('schema', messages_schema)
+
+
