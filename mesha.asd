@@ -1,7 +1,7 @@
 ;;;; mesha.asd
 
 (asdf:defsystem #:mesha
-  :description "Server code for Mesha"
+  :description "A productivity tool"
   :author "Kiran <projects@kirankp.com>"
   :license  "MIT"
   :version "0.0.1"
@@ -11,8 +11,6 @@
   :build-pathname "../mesha"
   :entry-point "mesha:main"
   :components ((:file "package")
-               (:file "net-sys")
-               (:file "net")
                (:file "main"))
   :depends-on (#:asdf
                #:bordeaux-threads
