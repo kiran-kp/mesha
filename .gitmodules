@@ -1,0 +1,3 @@
+[submodule "extern/cl-raylib"]
+	path = extern/cl-raylib
+	url = https://github.com/kiran-kp/cl-raylib.git
