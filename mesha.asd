@@ -1,5 +1,12 @@
 ;;;; mesha.asd
 
+;; add the extern folder to asdf registry before loading mesha
+;; todo: what is the right way to do this?
+;; (pushnew #P"/home/kiran/projects/mesha/extern/" asdf:*central-registry*)
+
+;; add mesha directory to cffi load path 
+;; (pushnew #P"/home/kiran/projects/mesha/" cffi:*foreign-library-directories*)
+
 (asdf:defsystem #:mesha
   :description "A productivity tool"
   :author "Kiran <projects@kirankp.com>"
@@ -15,4 +22,5 @@
   :depends-on (#:asdf
                #:bordeaux-threads
                #:cffi
+               #:cl-raylib
                #:log4cl))
