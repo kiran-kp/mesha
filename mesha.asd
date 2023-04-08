@@ -20,6 +20,7 @@
   :components ((:file "package")
                (:file "main"))
   :depends-on (#:asdf
+               #:3d-vectors
                #:bordeaux-threads
                #:cffi
                #:cl-raylib

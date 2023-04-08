@@ -1,3 +1,3 @@
 (defpackage :mesha
-  (:use #:cl)
+  (:use #:cl #:3d-vectors)
   (:export #:main))
