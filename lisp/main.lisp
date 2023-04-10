@@ -21,11 +21,10 @@
 
 (defstruct cell-render-context
   parent-grid
-  x-index
-  y-index
+  row
+  column
   position
-  width
-  height)
+  size)
 
 (defstruct grid-render-context
   position)
@@ -77,14 +76,16 @@
                        (text-render-context-color ctx)))
 
 (defmethod render ((item cell) (ctx cell-render-context))
-  (let ((bounds (vec (cell-render-context-width ctx) (cell-render-context-height ctx)))
+  (let ((bounds (cell-render-context-size ctx))
         (pos (cell-render-context-position ctx)))
     (raylib:draw-rectangle-v pos bounds raylib:+gray+)
-    (render (cell-content item) (make-text-render-context :font *font*
-                                                          :position (v+ pos (vec 5 5))
-                                                          :size 32.0
-                                                          :spacing 1.0
-                                                          :color raylib:+white+))))
+    (raylib:draw-rectangle-lines (round (vx pos)) (round (vy pos)) (round (vx bounds)) (round (vy bounds)) raylib:+black+)
+    (render (cell-content item)
+            (make-text-render-context :font *font*
+                                      :position (v+ pos (vec 5 5))
+                                      :size 32.0
+                                      :spacing 1.0
+                                      :color raylib:+white+))))
 
 (defun grid-iterate-cells (g fn)
   (let ((col 0))
@@ -104,13 +105,11 @@
     (nth col col-widths)))
 
 (defmethod render ((item grid) (ctx grid-render-context))
-  (declare (optimize (debug 3) (speed 0)))
   (let ((cell-ctx (make-cell-render-context :parent-grid item
-                                            :x-index 0
-                                            :y-index 0
+                                            :row 0
+                                            :column 0
                                             :position (vcopy (grid-render-context-position ctx))
-                                            :width 0
-                                            :height 0)))
+                                            :size (vec 0 0))))
     (grid-iterate-cells item
                         (lambda (row col c)
                           (when (equalp row 0)
@@ -120,8 +119,9 @@
                               (incf (vx (cell-render-context-position cell-ctx))
                                     (grid-get-column-width item (- col 1)))))
 
-                          (setf (cell-render-context-width cell-ctx) (grid-get-column-width item col)
-                                (cell-render-context-height cell-ctx) (grid-get-row-height item row))
+                          (setf (cell-render-context-size cell-ctx) (vec (grid-get-column-width item col) (grid-get-row-height item row))
+                                (cell-render-context-row cell-ctx) row
+                                (cell-render-context-column cell-ctx) col)
 
                           (render c cell-ctx)
 
