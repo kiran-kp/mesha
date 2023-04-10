@@ -7,9 +7,12 @@
   data
   (tags nil))
 
-(defstruct image
-  data
-  type)
+(defstruct text-render-context
+  font
+  position
+  size
+  spacing
+  color)
 
 (defstruct cell
   content
@@ -20,14 +23,12 @@
   parent-grid
   x-index
   y-index
-  x-pos
-  y-pos
+  position
   width
   height)
 
 (defstruct grid-render-context
-  x-pos
-  y-pos)
+  position)
 
 (defstruct grid
   owner
@@ -36,14 +37,17 @@
   column-widths)
 
 (defparameter *doc* (make-grid :cells (list
-                                       (list (make-cell :content (make-text :data "Hello world - row 1"))
-                                             (make-cell :content (make-text :data "Hello world - row 2"))
-                                             (make-cell :content (make-text :data "Hello world - row 3")))
-                                       (list (make-cell :content (make-text :data "Goodbye world - row 1"))
-                                             (make-cell :content (make-text :data "Goodbye world - row 2"))
-                                             (make-cell :content (make-text :data "Goodbye world - row 3"))))
-                               :row-heights (list (vector 10 10 10))
-                               :column-widths (list (vector 50))))
+                                       (list (make-cell :content (make-text :data "Apple"))
+                                             (make-cell :content (make-text :data "Watermelon"))
+                                             (make-cell :content (make-text :data "Kiwi"))
+                                             (make-cell :content (make-text :data "Orange")))
+                                       (list (make-cell :content (make-text :data "10"))
+                                             (make-cell :content (make-text :data "20"))
+                                             (make-cell :content (make-text :data "30"))
+                                             (make-cell :content (make-text :data "40")))
+                                       (list (make-cell :content (make-text :data "Red"))))
+                               :row-heights (list 50 50 50 50)
+                               :column-widths (list 250 250 250)))
 
 (defparameter *font* nil)
 
@@ -61,35 +65,67 @@
 (defmethod get-bounds ((item text))
   (raylib:measure-text-ex *font* (text-data item) 32.0 1.0))
 
-(defmethod render ((item text) (ctx cell-render-context))
-  (raylib:draw-text-ex *font*
+(defmethod get-bounds ((item cell))
+  (v+ (vec 10.0 5.0) (get-bounds (cell-content item))))
+
+(defmethod render ((item text) (ctx text-render-context))
+  (raylib:draw-text-ex (text-render-context-font ctx)
                        (text-data item)
-                       (vec (cell-render-context-x-pos ctx)
-                            (cell-render-context-y-pos ctx))
-                       32.0
-                       1.0
-                       raylib:+white+))
+                       (text-render-context-position ctx)
+                       (text-render-context-size ctx)
+                       (text-render-context-spacing ctx)
+                       (text-render-context-color ctx)))
 
 (defmethod render ((item cell) (ctx cell-render-context))
-  (render (cell-content item) ctx))
+  (let ((bounds (vec (cell-render-context-width ctx) (cell-render-context-height ctx)))
+        (pos (cell-render-context-position ctx)))
+    (raylib:draw-rectangle-v pos bounds raylib:+gray+)
+    (render (cell-content item) (make-text-render-context :font *font*
+                                                          :position (v+ pos (vec 5 5))
+                                                          :size 32.0
+                                                          :spacing 1.0
+                                                          :color raylib:+white+))))
+
+(defun grid-iterate-cells (g fn)
+  (let ((col 0))
+    (dolist (column-content (grid-cells g))
+      (let ((row 0))
+        (dolist (cell column-content)
+          (funcall fn row col cell)
+          (incf row)))
+      (incf col))))
+
+(defun grid-get-row-height (g row)
+  (let ((row-heights (grid-row-heights g)))
+    (nth row row-heights)))
+
+(defun grid-get-column-width (g col)
+  (let ((col-widths (grid-column-widths g)))
+    (nth col col-widths)))
 
 (defmethod render ((item grid) (ctx grid-render-context))
+  (declare (optimize (debug 3) (speed 0)))
   (let ((cell-ctx (make-cell-render-context :parent-grid item
                                             :x-index 0
                                             :y-index 0
-                                            :x-pos 200
-                                            :y-pos 250
-                                            :width 20
-                                            :height 20)))
-    (dolist (row (grid-cells item))
-      (dolist (c row)
-        (render c cell-ctx)
-        (incf (cell-render-context-y-index cell-ctx))
-        (incf (cell-render-context-y-pos cell-ctx) 30))
-      (incf (cell-render-context-x-index cell-ctx))
-      (setf (cell-render-context-y-index cell-ctx) 0)
-      (setf (cell-render-context-y-pos cell-ctx) 250)
-      (incf (cell-render-context-x-pos cell-ctx) 250))))
+                                            :position (vcopy (grid-render-context-position ctx))
+                                            :width 0
+                                            :height 0)))
+    (grid-iterate-cells item
+                        (lambda (row col c)
+                          (when (equalp row 0)
+                            (setf (vy (cell-render-context-position cell-ctx))
+                                  (vy (grid-render-context-position ctx)))
+                            (unless (equalp col 0)
+                              (incf (vx (cell-render-context-position cell-ctx))
+                                    (grid-get-column-width item (- col 1)))))
+
+                          (setf (cell-render-context-width cell-ctx) (grid-get-column-width item col)
+                                (cell-render-context-height cell-ctx) (grid-get-row-height item row))
+
+                          (render c cell-ctx)
+
+                          (incf (vy (cell-render-context-position cell-ctx)) (grid-get-row-height item row))))))
 
 (defun main-loop ()
   (unwind-protect
@@ -98,8 +134,7 @@
          (raylib:clear-background raylib:+black+)
          (raylib:draw-fps 20 20)
          (render *doc*
-                 (make-grid-render-context :x-pos 0
-                                           :y-pos 0)))
+                 (make-grid-render-context :position (vec 100.0 200.0))))
     (raylib:end-drawing)))
 
 (defun main ()
@@ -111,8 +146,10 @@
          (raylib:set-exit-key 0)
          (load-font)
 
+         ;; (main-loop)
          (loop while (not (raylib:window-should-close))
-               do (main-loop)))
+               do (main-loop))
+         )
     (progn
       (unload-font)
       (raylib:close-window)
