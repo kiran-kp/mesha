@@ -5,7 +5,8 @@
 
 (defstruct text
   data
-  (tags nil))
+  (tags nil)
+  (edit nil))
 
 (defstruct text-render-context
   font
@@ -50,6 +51,8 @@
 
 (defparameter *font* nil)
 
+(defparameter *messages* nil)
+
 (defun load-font ()
   (setf *font*
         (raylib:load-font (namestring (asdf:system-relative-pathname 'mesha "assets/fonts/OpenSans-Regular.ttf")))))
@@ -58,6 +61,7 @@
   (raylib:unload-font *font*)
   (setf *font* nil))
 
+(defgeneric update (item msg))
 (defgeneric render (item ctx))
 (defgeneric get-bounds (item))
 
@@ -73,13 +77,48 @@
                        (text-render-context-position ctx)
                        (text-render-context-size ctx)
                        (text-render-context-spacing ctx)
-                       (text-render-context-color ctx)))
+                       (if (text-edit item) raylib:+red+ (text-render-context-color ctx))))
+
+(defmethod update ((item cell) msg)
+  (match msg
+    ('enter-edit-mode
+     (setf (text-edit (cell-content item)) t))
+    ('exit-edit-mode
+     (setf (text-edit (cell-content item)) nil))
+    ('received-input-backspace
+     (setf (text-data (cell-content item))
+           (str:fit (- (length (text-data (cell-content item))) 1)
+                    (text-data (cell-content item))
+                    :ellipsis nil)))
+    ((list 'received-input-codepoint c)
+     (setf (text-data (cell-content item)) (str:concat (text-data (cell-content item)) (format nil "~a" (code-char c)))))))
 
 (defmethod render ((item cell) (ctx cell-render-context))
-  (let ((bounds (cell-render-context-size ctx))
-        (pos (cell-render-context-position ctx)))
+  (let* ((bounds (cell-render-context-size ctx))
+         (pos (cell-render-context-position ctx))
+         (rect (raylib:make-rectangle-v pos bounds))
+         (is-hovering (raylib:check-collision-point-rec (raylib:get-mouse-position) rect))
+         (is-clicked (and is-hovering (raylib:is-mouse-button-pressed :mouse-button-left))))
     (raylib:draw-rectangle-v pos bounds raylib:+gray+)
-    (raylib:draw-rectangle-lines (round (vx pos)) (round (vy pos)) (round (vx bounds)) (round (vy bounds)) raylib:+black+)
+    (raylib:draw-rectangle-lines (round (vx pos))
+                                 (round (vy pos))
+                                 (round (vx bounds))
+                                 (round (vy bounds))
+                                 (if is-hovering raylib:+white+ raylib:+black+))
+    (when is-clicked
+      (push (list item 'enter-edit-mode) *messages*))
+
+    (when (text-edit (cell-content item))
+      (let ((k (raylib:get-key-pressed)))
+        (when (or (equal k :key-escape)
+                  (equal k :key-enter))
+          (push (list item 'exit-edit-mode) *messages*))
+        (when (equal k :key-backspace)
+          (push (list item 'received-input-backspace) *messages*)))
+      (let ((c (raylib:get-char-pressed)))
+        (when (not (equal 0 c))
+          (push (list item (list 'received-input-codepoint c)) *messages*))))
+    
     (render (cell-content item)
             (make-text-render-context :font *font*
                                       :position (v+ pos (vec 5 5))
@@ -133,6 +172,12 @@
          (raylib:begin-drawing)
          (raylib:clear-background raylib:+black+)
          (raylib:draw-fps 20 20)
+
+         (dolist (msg-params *messages*)
+           (update (nth 0 msg-params) (nth 1 msg-params)))
+
+         (setf *messages* nil)
+         
          (render *doc*
                  (make-grid-render-context :position (vec 100.0 200.0))))
     (raylib:end-drawing)))
@@ -146,10 +191,8 @@
          (raylib:set-exit-key 0)
          (load-font)
 
-         ;; (main-loop)
          (loop while (not (raylib:window-should-close))
-               do (main-loop))
-         )
+               do (main-loop)))
     (progn
       (unload-font)
       (raylib:close-window)
