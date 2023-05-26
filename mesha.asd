@@ -18,14 +18,10 @@
   :build-pathname "../mesha"
   :entry-point "mesha:main"
   :components ((:file "package")
-               (:file "ui")
                (:file "main"))
-  :depends-on (#:alexandria
-               #:asdf
-               #:3d-vectors
-               #:bordeaux-threads
-               #:cffi
-               #:cl-raylib
+  :depends-on (#:cffi
+               #:cl-gtk4
+               #:cl-gdk4
                #:log4cl
                #:str
                #:trivia))
