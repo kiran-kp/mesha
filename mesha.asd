@@ -20,8 +20,6 @@
   :components ((:file "package")
                (:file "main"))
   :depends-on (#:cffi
-               #:cl-gtk4
-               #:cl-gdk4
                #:log4cl
                #:str
                #:trivia))

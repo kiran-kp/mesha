@@ -1,30 +1,11 @@
 (in-package #:mesha)
 
-(defun add-something (x)
-  (+ x 30))
+(defparameter *doc* (make-instance 'table
+                                   :parent nil
+                                   :cells (list #("Apples" 10 "Walmart")
+                                                #("Oranges" 5 "Target"))
+                                   :num-rows 2
+                                   :num-columns 3
+                                   :row-heights (list 30 30)
+                                   :column-widths (list 100 50 150)))
 
-(gtk4:define-application (:name main
-                          :id "org.mesha.main-window")
-  (gtk4:define-main-window (window (gtk4:make-application-window :application gtk4:*application*))
-    (setf (gtk4:window-title window) "Simple Counter")
-    (let ((box (gtk4:make-box :orientation gtk4:+orientation-vertical+
-                              :spacing 4)))
-      (let ((label (gtk4:make-label :str "0")))
-        (setf (gtk4:widget-hexpand-p label) t
-              (gtk4:widget-vexpand-p label) t)
-        (gtk4:box-append box label)
-        (let ((button (gtk4:make-button :label "Add 1"))
-              (count 0))
-          (gtk4:connect button "clicked" (lambda (button)
-                                           (declare (ignore button))
-                                           (setf count (add-something count))
-                                           (setf (gtk4:label-text label) (format nil "~A" count))))
-          (gtk4:box-append box button))
-        (let ((button (gtk4:make-button :label "Exit")))
-          (gtk4:connect button "clicked" (lambda (button)
-                                           (declare (ignore button))
-                                           (gtk4:window-destroy window)))
-          (gtk4:box-append box button)))
-      (setf (gtk4:window-child window) box))
-    (unless (gtk4:widget-visible-p window)
-      (gtk4:window-present window))))
