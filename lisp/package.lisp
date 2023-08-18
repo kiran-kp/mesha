@@ -1,3 +1,4 @@
 (defpackage :mesha
   (:use #:cl)
-  (:export #:main))
+  (:export #:main
+           #:shutdown))
