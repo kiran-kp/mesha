@@ -1,8 +1,11 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:linked_scroll_controller/linked_scroll_controller.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:web_socket_channel/status.dart' as status;
 import 'package:provider/provider.dart';
+import 'package:web_socket_channel/status.dart' as status;
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 DocumentCache? documentCache;
 
@@ -17,6 +20,7 @@ class DocumentCache extends ChangeNotifier {
   DocumentCache() {
     _channel.stream.listen((event) {
       value = event.toString();
+      _channel.sink.add('Thanks!');
       notifyListeners();
     });
   }
@@ -67,6 +71,7 @@ class _MeshaDocumentState extends State<MeshaDocument> {
       child: Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
         body: CustomScrollView(
+          controller: AdjustableScrollController(),
           slivers: <Widget>[
             SliverAppBar(
               pinned: true,
@@ -142,5 +147,19 @@ class MeshaCell extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+class AdjustableScrollController extends ScrollController {
+  AdjustableScrollController([int extraScrollSpeed = 40]) {
+    super.addListener(() {
+      ScrollDirection scrollDirection = super.position.userScrollDirection;
+      if (scrollDirection != ScrollDirection.idle) {
+        int slack = (scrollDirection == ScrollDirection.reverse) ? extraScrollSpeed : -extraScrollSpeed;
+        double scrollEnd = super.offset + slack;
+        scrollEnd = min(super.position.maxScrollExtent, max(super.position.minScrollExtent, scrollEnd));
+        jumpTo(scrollEnd);
+      }
+    });
   }
 }
