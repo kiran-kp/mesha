@@ -20,4 +20,5 @@
                #:clack
                #:websocket-driver
                #:alexandria
-               #:mito))
+               #:mito
+               #:yason))
