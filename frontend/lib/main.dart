@@ -1,3 +1,5 @@
+import 'dart:collection';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -7,22 +9,70 @@ import 'package:provider/provider.dart';
 import 'package:web_socket_channel/status.dart' as status;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-DocumentCache? documentCache;
+BlockCache blockCache = BlockCache();
 
 void main() async {
   runApp(const MyApp());
 }
 
-class DocumentCache extends ChangeNotifier {
-  final _channel = WebSocketChannel.connect(Uri.parse('ws://localhost:13307'));
-  String value = "...";
+class Block extends ChangeNotifier {
+  int _id = 0;
+  Object _value = "";
+  bool _hasValue = false;
 
-  DocumentCache() {
-    _channel.stream.listen((event) {
-      value = event.toString();
-      _channel.sink.add('Thanks!');
+  Block(id) {
+    _id = id;
+    _hasValue = false;
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  void update(int id, Object value) {
+    assert(_id == id);
+    _value = value;
+    _hasValue = true;
+    notifyListeners();
+  }
+}
+
+class BlockCache extends ChangeNotifier {
+  final _channel = WebSocketChannel.connect(Uri.parse('ws://localhost:13307'));
+  final HashMap<int, Block> _cache = HashMap();
+
+  BlockCache() {
+    _channel.stream.listen((msg) {
+      final m = jsonDecode(msg);
+      int id = m['id'];
+      Block? b = _cache[id];
+      if (b == null) {
+        b = Block(id);
+        _cache[id] = b;
+      }
+
+      b.update(id, m['value']);
       notifyListeners();
     });
+  }
+
+  Block? getBlock(int id) {
+    Block? b = _cache[id];
+    if (b == null) {
+      b = Block(id);
+      _cache[id] = b;
+    }
+
+    if (!b._hasValue) {
+      _channel.sink.add("(:operation :get-block :id $id)");
+    }
+
+    return b;
+  }
+
+  void updateBlock(int id, String value) {
+    _channel.sink.add("(:operation :set-block :id $id :value \"$value\")");
   }
 }
 
@@ -55,8 +105,7 @@ class _MeshaDocumentState extends State<MeshaDocument> {
 
   @override
   void dispose() {
-    documentCache?._channel.sink.close(status.normalClosure);
-    documentCache = null;
+    blockCache._channel.sink.close(status.normalClosure);
     super.dispose();
   }
 
@@ -65,32 +114,13 @@ class _MeshaDocumentState extends State<MeshaDocument> {
     ThemeData theme = Theme.of(context);
     return ChangeNotifierProvider(
       create: ((context) {
-        documentCache = DocumentCache();
-        return documentCache;
+        return blockCache;
       }),
       child: Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
-        body: CustomScrollView(
-          controller: AdjustableScrollController(),
-          slivers: <Widget>[
-            SliverAppBar(
-              pinned: true,
-              backgroundColor: theme.secondaryHeaderColor,
-              centerTitle: true,
-              expandedHeight: 75.0,
-              flexibleSpace: FlexibleSpaceBar(
-                title: Text('Document', style: theme.textTheme.headlineMedium),
-              ),
-            ),
-            SliverFixedExtentList(
-              itemExtent: 50.0,
-              delegate: SliverChildBuilderDelegate(
-                (BuildContext context, int row) {
-                  return MeshaRow(row, _controllerGroup.addAndGet());
-                },
-              ),
-            ),
-          ],
+        body: const MeshaCell(
+          id: 1,
+          width: 500.0,
         ),
       ),
     );
@@ -107,6 +137,8 @@ class MeshaRow extends StatefulWidget {
 }
 
 class _MeshaRowState extends State<MeshaRow> {
+  _MeshaRowState() {}
+
   @override
   void dispose() {
     widget.controller.dispose();
@@ -116,14 +148,14 @@ class _MeshaRowState extends State<MeshaRow> {
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(
-      key: Key('Row-${widget.index}'),
+      key: Key('Row-$widget.index'),
       scrollDirection: Axis.horizontal,
       controller: widget.controller,
       slivers: <Widget>[
         SliverList(
           delegate: SliverChildBuilderDelegate(
             (BuildContext context, int col) {
-              return MeshaCell('(${widget.index}, $col)', width: 100.0);
+              return const MeshaCell(id: 1, width: 100.0);
             },
           ),
         ),
@@ -132,20 +164,49 @@ class _MeshaRowState extends State<MeshaRow> {
   }
 }
 
-class MeshaCell extends StatelessWidget {
-  const MeshaCell(this.text, {super.key, this.width});
+class MeshaCell extends StatefulWidget {
+  const MeshaCell({super.key, required this.id, this.width});
   final double? width;
-  final String text;
+  final int id;
+
+  @override
+  State<MeshaCell> createState() => _MeshaCellState();
+}
+
+class _MeshaCellState extends State<MeshaCell> {
+  late double _width;
+  late int _id;
+  late TextEditingController _textEditingController;
+
+  @override
+  void initState() {
+    super.initState();
+    _width = widget.width == null ? 100.0 : widget.width!;
+    _id = widget.id;
+    _textEditingController = TextEditingController();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Consumer<DocumentCache>(
-      builder: (context, cache, child) {
-        return Container(
-          alignment: Alignment.center,
-          width: width,
-          child: Text(documentCache != null ? documentCache!.value : ''),
-        );
-      },
+    return ChangeNotifierProvider(
+      create: ((context) {
+        return blockCache.getBlock(_id);
+      }),
+      child: Consumer<Block>(
+        builder: (context, block, child) {
+          _textEditingController.text = block._value.toString();
+          return Container(
+            alignment: Alignment.center,
+            width: _width,
+            child: TextField(
+              controller: _textEditingController,
+              onSubmitted: (String value) async {
+                blockCache.updateBlock(block._id, value);
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 }

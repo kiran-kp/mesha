@@ -33,9 +33,13 @@
     (when (equal client *current-client*)
       (setf *current-client* nil))))
 
-(defun handle-message-received (connection msg)
-  (declare (ignore connection))
-  (log:info "Received message: ~a" (with-input-from-string (s msg) (read s))))
+(defun handle-message-received (connection msg-str)
+  (log:info "Received message: ~a" msg-str)
+  (let ((msg (with-input-from-string (s msg-str) (read s)))
+        (client (gethash connection *clients*)))
+    (ccase (getf msg :operation)
+      (:get-block (send-block-update client (getf msg :id)))
+      (:set-block (setf (gethash (getf msg :id) *blocks*) (getf msg :value))))))
 
 (defun setup-mesha-server (env)
   (let ((ws (websocket-driver:make-server env)))
