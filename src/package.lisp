@@ -1,4 +1,4 @@
 (defpackage :mesha
-  (:use #:cl)
+  (:use #:cl #:trivia #:spinneret)
   (:export #:main
            #:shutdown))
