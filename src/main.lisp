@@ -113,6 +113,7 @@
       (:title "Mesha")
       (:meta :charset"UTF-8")
       (:meta :name "viewport" :content "width=device-width, initial-scale=1.0")
+      (:script :src "https://unpkg.com/htmx.org@1.9.6")
       (:script :src "https://cdn.tailwindcss.com"))
      (:body :class "bg-gray-300 dark:bg-gray-700"
             (:div :class "flex flex-col h-screen"
@@ -120,7 +121,9 @@
                   (:main :class "flex flex-grow"
                          (:div :class "mx-auto max-w-full flex flex-grow py-6 sm:px-6 lg:px-8"
                                (:div :id "content" :class "mx-auto max-w-full flex flex-grow py-6 sm:px-6 lg:px-8 bg-gray-600"
-                                     (:p "Hello there")))))))))
+                                     (:p "Hello there")
+                                     (:br)
+                                     (:button :hx-post "/clicked" :hx-swap "innerHTML" "Click Me")))))))))
 
 (defun handler (env)
   (declare (optimize (debug 3) (speed 0)))
@@ -128,11 +131,13 @@
     (match path
       ("/" (respond-ok *main-view*))
       ("/hello" (respond-ok (with-html-string (:h1 "Test a route"))))
+      ("/clicked" (respond-ok (with-html-string (:h1 "HTMX Works"))))
       (_ (respond-404 (with-html-string (:div (:h1 "Error 404")
                                               (:p "Content not found"))))))))
 
 (defun main ()
   (log:info "Starting mesha server")
+  (pushnew "hx-" *unvalidated-attribute-prefixes* :test #'equal)
   (setf *server*
         (clack:clackup (lambda (env) (funcall 'handler env))
                        :address "0.0.0.0"
