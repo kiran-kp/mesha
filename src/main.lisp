@@ -144,4 +144,3 @@
         *current-client* nil))
 
 (main)
-(shutdown)
