@@ -22,5 +22,6 @@
                #:alexandria
                #:mito
                #:spinneret
+               #:parenscript
                #:trivia
                #:yason))
