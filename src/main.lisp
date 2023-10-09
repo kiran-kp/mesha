@@ -78,32 +78,17 @@
     (list :content-type ,output-type)
     (,output)))
 
-(deftag nav-button (text attrs)
-  `(:button
-    ,@attrs
-    :type "button"
-    :class "text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium"
-    ,text))
+(defparameter *nav-button*
+  `(:type "button"
+    :class "text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium"))
 
-(deftag nav-button-active (text attrs)
-  `(:button
-     ,@attrs
-     :type "button"
-     :class "bg-gray-900 text-white rounded-md px-3 py-2 text-sm font-medium"
-     :aria-current "page"
-     ,text))
+(defparameter *nav-button-active*
+  '(:type "button"
+    :class "bg-gray-900 text-white rounded-md px-3 py-2 text-sm font-medium"))
 
-(deftag nav-bar (title attrs)
-  `(:nav :class "bg-gray-800" ,@attrs
-    (:div :class "mx-auto px-4 sm:px-6 px:px-8"
-     (:div :class "flex h-16 items-center justify-between"
-      (:div :class "flex items-center"
-       (:div :class "flex-shrink-0 w-max"
-        (:h1 :class "text-2xl text-white font-mono font-bold" ,title))
-       (:div :class "hidden md:block"
-        (:div :class "ml-10 flex items-baseline space-x-4"
-         (nav-button-active "Home" nil)
-         (nav-button "Draw" nil))))))))
+(defparameter *button*
+  `(:type "button"
+    :class "text-white bg-blue-950 hover:bg-blue-700 hover:text-white rounded-md px-3 py-2 text-sm font-bold"))
 
 (defparameter *main-view*
   (with-html-string
@@ -117,13 +102,22 @@
       (:script :src "https://cdn.tailwindcss.com"))
      (:body :class "bg-gray-300 dark:bg-gray-700"
             (:div :class "flex flex-col h-screen"
-                  (nav-bar "Mesha" nil)
+                  (:nav :class "bg-gray-800"
+                        (:div :class "mx-auto px-4 sm:px-6 px:px-8"
+                              (:div :class "flex h-16 items-center justify-between"
+                                    (:div :class "flex items-center"
+                                          (:div :class "flex-shrink-0 w-max"
+                                                (:h1 :class "text-2xl text-white font-mono font-bold" "Mesha"))
+                                          (:div :class "hidden md:block"
+                                                (:div :class "ml-10 flex items-baseline space-x-4"
+                                                      (:button :attrs *nav-button-active* "Home")
+                                                      (:button :attrs *nav-button* "Draw")))))))
                   (:main :class "flex flex-grow"
                          (:div :class "mx-auto max-w-full flex flex-grow py-6 sm:px-6 lg:px-8"
                                (:div :id "content" :class "mx-auto max-w-full flex flex-grow py-6 sm:px-6 lg:px-8 bg-gray-600"
                                      (:p "Hello there")
                                      (:br)
-                                     (:button :hx-post "/clicked" :hx-swap "innerHTML" "Click Me")))))))))
+                                     (:button :attrs *button* :hx-post "/clicked" :hx-swap "innerHTML" "Click Me")))))))))
 
 (defun handler (env)
   (declare (optimize (debug 3) (speed 0)))
