@@ -70,29 +70,61 @@
                      :value ,(format nil "~a" val)))))
     (send-message client (yason:with-output-to-string* () (yason:encode message)))))
 
-(defun respond-ok (output &optional (output-type "text/html"))
-  `(200
-    (list :content-type ,output-type)
-    (,output)))
+(defun button (text &rest attrs)
+  (with-html
+    (:button :type "button"
+             :class "text-white bg-blue-950 shadow-lg hover:bg-blue-700 hover:text-white rounded-md px-3 py-2 text-sm font-bold"
+             :attrs attrs
+             text)))
 
-(defun respond-404 (output &optional (output-type "text/html"))
-  `(404
-    (list :content-type ,output-type)
-    (,output)))
+(defun get-mesha-script ()
+  (parenscript:ps
+    (defvar *rich-text-editor* nil)
+    (defvar *websocket* nil)
 
-(defparameter *nav-button*
-  `(:type "button"
-    :class "text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium"))
+    (defun handle-server-message (msg-event)
+      (let* ((obj (parenscript:chain +JSON+ (parse (parenscript:@ msg-event data))))
+             (op (parenscript:@ obj operation))
+             (val (parenscript:@ obj value)))
+        (parenscript:case op
+          ("update-block" (when (parenscript:stringp val)
+                            (parenscript:chain *rich-text-editor* (set-text val))))))
+      nil)
+    
+    (defun init-mesha-client ()
+      ;; (parenscript:chain -Mousetrap (bind "ctrl+enter" (lambda () (parenscript:chain *rich-text-editor* (focus)))))
+      (setf *websocket* (parenscript:new (-Web-Socket "ws://localhost:13330")))
+      (setf (parenscript:@ *websocket* onopen) (lambda (open-event)
+                                                 (setf (parenscript:@ *websocket* onmessage) #'handle-server-message)
+                                                 nil))
+      (when (equal *rich-text-editor* nil)
+        (setf *rich-text-editor* (parenscript:new (-Quill "#editor-container" (parenscript:create theme "bubble")))))
+      nil)))
 
-(defparameter *nav-button-active*
-  '(:type "button"
-    :class "bg-gray-900 text-white rounded-md px-3 py-2 text-sm font-medium"))
+(defun get-nav-bar ()
+  (flet ((button (text &rest attrs)
+           (with-html (:button :type "button"
+                               :class "text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium"
+                               :attrs attrs
+                               text)))
+         (active-button (text &rest attrs)
+           (with-html (:button :type "button"
+                               :class "bg-gray-900 text-white rounded-md px-3 py-2 text-sm font-medium"
+                               :attrs attrs
+                               text))))
+    (with-html
+      (:nav :class "bg-gray-800"
+            (:div :class "mx-auto px-4 sm:px-6 px:px-8"
+                  (:div :class "flex h-16 items-center justify-between"
+                        (:div :class "flex items-center"
+                              (:div :class "flex-shrink-0 w-max"
+                                    (:h1 :class "text-2xl text-white font-mono font-bold" "Mesha"))
+                              (:div :class "hidden md:block"
+                                    (:div :class "ml-10 flex items-baseline space-x-4"
+                                          (active-button "Home")
+                                          (button "Draw"))))))))))
 
-(defparameter *button*
-  `(:type "button"
-    :class "text-white bg-blue-950 shadow-lg hover:bg-blue-700 hover:text-white rounded-md px-3 py-2 text-sm font-bold"))
-
-(defparameter *main-view*
+(defun get-main-view ()
   (with-html-string
     (:doctype)
     (:html
@@ -107,45 +139,14 @@
       (:script :src "https://cdn.quilljs.com/1.3.6/quill.js")
       (:script :src "https://cdnjs.cloudflare.com/ajax/libs/mousetrap/1.6.5/mousetrap.min.js")
       (:script
-       (:raw
-        (parenscript:ps
-          (defvar *rich-text-editor* nil)
-          (defvar *websocket* nil)
-
-          (defun handle-server-message (msg-event)
-            (let* ((obj (parenscript:chain +JSON+ (parse (parenscript:@ msg-event data))))
-                   (val (parenscript:@ obj value)))
-              (when (parenscript:stringp val)
-                (parenscript:chain *rich-text-editor* (set-text val))))
-            nil)
-          
-          (defun init-mesha-client ()
-            ;; (parenscript:chain -Mousetrap (bind "ctrl+enter" (lambda () (parenscript:chain *rich-text-editor* (focus)))))
-            (setf *websocket* (parenscript:new (-Web-Socket "ws://localhost:13330")))
-            (setf (parenscript:@ *websocket* onopen) (lambda (open-event)
-                                                       (setf (parenscript:@ *websocket* onmessage) #'handle-server-message)
-                                                       nil))
-            (when (equal *rich-text-editor* nil)
-              (setf *rich-text-editor* (parenscript:new (-Quill "#editor-container" (parenscript:create theme "bubble")))))
-            nil)))))
+       (:raw (get-mesha-script))))
      (:body :class "bg-gray-300 dark:bg-gray-700"
             (:div :class "flex flex-col h-screen"
-                  (:nav :class "bg-gray-800"
-                        (:div :class "mx-auto px-4 sm:px-6 px:px-8"
-                              (:div :class "flex h-16 items-center justify-between"
-                                    (:div :class "flex items-center"
-                                          (:div :class "flex-shrink-0 w-max"
-                                                (:h1 :class "text-2xl text-white font-mono font-bold" "Mesha"))
-                                          (:div :class "hidden md:block"
-                                                (:div :class "ml-10 flex items-baseline space-x-4"
-                                                      (:button :attrs *nav-button-active* "Home")
-                                                      (:button :attrs *nav-button* "Draw")))))))
+                  (get-nav-bar)
                   (:main :class "h-full"
                          (:div :class "w-full h-full grow flex px-6 py-6"
                                (:div :id "content" :class "bg-gray-600 w-full px-6 py-6"
-                                     (:button :attrs *button* :hx-post "/clicked" :hx-swap "innerHTML" "Click Me")
-                                     (:br)
-                                     (:br)
+                                     (button "Click me" :hx-post "/clicked" :hx-swap "innerHTML")
                                      (:div :class "rounded-xl bg-gray-200 shadow-lg p-5"
                                            (:div :id "editor-container" :x-init (parenscript:ps (init-mesha-client)) :class "max-h-full"))))))))))
 
@@ -153,17 +154,26 @@
 
 (defun handler (env)
   (declare (optimize (debug 3) (speed 0)))
-  (let ((path (getf env :path-info)))
-    (match path
-      ("/" (respond-ok *main-view*))
-      ("/clicked" (respond-ok (progn
-                                (setf *button-state* (not *button-state*))
-                                (if *button-state*
-                                    (with-html-string (:div :x-init (parenscript:ps (parenscript:chain *websocket* (send "(:operation :get-block :id 1)")))
-                                                            "I've been clicked"))
-                                    (with-html-string (:div :x-init (parenscript:ps (parenscript:chain *websocket* (send "(:operation :get-block :id 2)"))) "Click me"))))))
-      (_ (respond-404 (with-html-string (:div (:h1 "Error 404")
-                                              (:p "Content not found"))))))))
+  (flet ((respond-ok (output &optional (output-type "text/html"))
+           `(200
+             (list :content-type ,output-type)
+             (,output)))
+         (respond-404 (output &optional (output-type "text/html"))
+           `(404
+             (list :content-type ,output-type)
+             (,output))))
+    (let ((path (getf env :path-info)))
+      (match path
+        ("/" (respond-ok (get-main-view)))
+        ("/clicked" (progn
+                      (setf *button-state* (not *button-state*))
+                      (if *button-state*
+                          (respond-ok (with-html-string (:div :x-init (parenscript:ps (parenscript:chain *websocket* (send "(:operation :get-block :id 1)")))
+                                                              "Get block 1")))
+                          (respond-ok (with-html-string (:div :x-init (parenscript:ps (parenscript:chain *websocket* (send "(:operation :get-block :id 2)")))
+                                                              "Get block 2"))))))
+        (_ (respond-404 (with-html-string (:div (:h1 "Error 404")
+                                                (:p "Content not found")))))))))
 
 (defun main ()
   (log:info "Starting mesha server")
@@ -171,7 +181,7 @@
   (setf yason:*symbol-encoder* #'yason:encode-symbol-as-lowercase
         yason:*symbol-key-encoder* #'yason:encode-symbol-as-lowercase)
 
-  ;; ignore htmx attributes
+  ;; ignore htmx attributesp
   (pushnew "hx-" *unvalidated-attribute-prefixes* :test #'equal)
   ;; ignore alpine.js attributes
   (pushnew "x-" *unvalidated-attribute-prefixes* :test #'equal)
