@@ -65,7 +65,7 @@
 (defun send-block-update (client block-id)
   (let* ((val (gethash block-id *blocks*))
          (message (alexandria:plist-hash-table
-                   `(:operation "update-block"
+                   `(:operation "set-block"
                      :id ,block-id
                      :value ,(format nil "~a" val)))))
     (send-message client (yason:with-output-to-string* () (yason:encode message)))))
@@ -80,15 +80,19 @@
 (defun get-mesha-script ()
   (parenscript:ps
     (defvar *rich-text-editor* nil)
+    (defvar *rich-text-renderer* nil)
     (defvar *websocket* nil)
+
+    (defun mesha-get-block (id)
+      (parenscript:chain *websocket* (send (parenscript:concatenate 'string "(:operation :get-block :id " id ")"))))
 
     (defun handle-server-message (msg-event)
       (let* ((obj (parenscript:chain +JSON+ (parse (parenscript:@ msg-event data))))
              (op (parenscript:@ obj operation))
              (val (parenscript:@ obj value)))
         (parenscript:case op
-          ("update-block" (when (parenscript:stringp val)
-                            (parenscript:chain *rich-text-editor* (set-text val))))))
+          ("set-block" (when (parenscript:stringp val)
+                         (parenscript:chain *rich-text-editor* (set-text val))))))
       nil)
     
     (defun init-mesha-client ()
@@ -99,6 +103,8 @@
                                                  nil))
       (when (equal *rich-text-editor* nil)
         (setf *rich-text-editor* (parenscript:new (-Quill "#editor-container" (parenscript:create theme "bubble")))))
+      (when (equal *rich-text-renderer* nil)
+        (setf *rich-text-renderer* (parenscript:new (-Quill (parenscript:chain document (create-element "div")) (parenscript:create theme "bubble")))))
       nil)))
 
 (defun get-nav-bar ()
@@ -168,9 +174,9 @@
         ("/clicked" (progn
                       (setf *button-state* (not *button-state*))
                       (if *button-state*
-                          (respond-ok (with-html-string (:div :x-init (parenscript:ps (parenscript:chain *websocket* (send "(:operation :get-block :id 1)")))
+                          (respond-ok (with-html-string (:div :x-init (parenscript:ps (mesha-get-block 1))
                                                               "Get block 1")))
-                          (respond-ok (with-html-string (:div :x-init (parenscript:ps (parenscript:chain *websocket* (send "(:operation :get-block :id 2)")))
+                          (respond-ok (with-html-string (:div :x-init (parenscript:ps (mesha-get-block 2))
                                                               "Get block 2"))))))
         (_ (respond-404 (with-html-string (:div (:h1 "Error 404")
                                                 (:p "Content not found")))))))))
