@@ -1,23 +1,34 @@
 (in-package #:mesha)
 
+(defclass client ()
+  ((connection :initarg :connection)))
+
+(defclass cell ()
+  ((parent :initarg :parent :initform 0)
+   (children :initarg :children :initform nil)
+   (content :initarg :content)))
+
 (defclass document ()
   ((filepath :initarg :filepath)
    (connection :initform nil)))
 
-(defclass client ()
-  ((connection :initarg :connection)))
-
 (defvar *clients* (make-hash-table))
 (defvar *server* nil)
-(defvar *websocket-server* nil)
 
 (defvar *current-client* nil)
 
-(defparameter *blocks* (alexandria:plist-hash-table '(1 "Test"
-                                                      2 123
-                                                      3 "A longer line of text"
-                                                      4 "https://www.google.com/"
-                                                      5 (1 2 3 4))))
+;; Root is 0. Rows are children of 0 by default
+(defparameter *cells* (alexandria:alist-hash-table (list (cons 1 (make-instance 'cell :content "Test"))
+                                                         (cons 2 (make-instance 'cell :content 123))
+                                                         (cons 3 (make-instance 'cell :children (list 4 5) :content "Parent"))
+                                                         (cons 4 (make-instance 'cell :parent 3 :content 1337))
+                                                         (cons 5 (make-instance 'cell :parent 3 :content "किरण"))
+                                                         (cons 6 (make-instance 'cell :children (list 7 8 9 10 11) :content "List"))
+                                                         (cons 7 (make-instance 'cell :parent 6 :content 1))
+                                                         (cons 8 (make-instance 'cell :parent 6 :content 2))
+                                                         (cons 9 (make-instance 'cell :parent 6 :content 3))
+                                                         (cons 10 (make-instance 'cell :parent 6 :content 4))
+                                                         (cons 11 (make-instance 'cell :parent 6 :content 5)))))
 
 (defun send-websocket-message (client msg)
   (websocket-driver:send (slot-value client 'connection) msg))
@@ -70,139 +81,17 @@
                      :value ,(format nil "~a" val)))))
     (send-message client (yason:with-output-to-string* () (yason:encode message)))))
 
-(defun button (text &rest attrs)
-  (with-html
-    (:button :type "button"
-             :class "text-white bg-blue-950 shadow-lg hover:bg-blue-700 hover:text-white rounded-md px-3 py-2 text-sm font-bold"
-             :attrs attrs
-             text)))
-
-(defun get-mesha-script ()
-  (parenscript:ps
-    (defvar *rich-text-editor* nil)
-    (defvar *rich-text-renderer* nil)
-    (defvar *websocket* nil)
-
-    (defun mesha-get-block (id)
-      (parenscript:chain *websocket* (send (parenscript:concatenate 'string "(:operation :get-block :id " id ")"))))
-
-    (defun handle-server-message (msg-event)
-      (let* ((obj (parenscript:chain +JSON+ (parse (parenscript:@ msg-event data))))
-             (op (parenscript:@ obj operation))
-             (val (parenscript:@ obj value)))
-        (parenscript:case op
-          ("set-block" (when (parenscript:stringp val)
-                         (parenscript:chain *rich-text-editor* (set-text val))))))
-      nil)
-    
-    (defun init-mesha-client ()
-      ;; (parenscript:chain -Mousetrap (bind "ctrl+enter" (lambda () (parenscript:chain *rich-text-editor* (focus)))))
-      (setf *websocket* (parenscript:new (-Web-Socket "ws://localhost:13330")))
-      (setf (parenscript:@ *websocket* onopen) (lambda (open-event)
-                                                 (setf (parenscript:@ *websocket* onmessage) #'handle-server-message)
-                                                 nil))
-      (when (equal *rich-text-editor* nil)
-        (setf *rich-text-editor* (parenscript:new (-Quill "#editor-container" (parenscript:create theme "bubble")))))
-      (when (equal *rich-text-renderer* nil)
-        (setf *rich-text-renderer* (parenscript:new (-Quill (parenscript:chain document (create-element "div")) (parenscript:create theme "bubble")))))
-      nil)))
-
-(defun get-nav-bar ()
-  (flet ((button (text &rest attrs)
-           (with-html (:button :type "button"
-                               :class "text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium"
-                               :attrs attrs
-                               text)))
-         (active-button (text &rest attrs)
-           (with-html (:button :type "button"
-                               :class "bg-gray-900 text-white rounded-md px-3 py-2 text-sm font-medium"
-                               :attrs attrs
-                               text))))
-    (with-html
-      (:nav :class "bg-gray-800"
-            (:div :class "mx-auto px-4 sm:px-6 px:px-8"
-                  (:div :class "flex h-16 items-center justify-between"
-                        (:div :class "flex items-center"
-                              (:div :class "flex-shrink-0 w-max"
-                                    (:h1 :class "text-2xl text-white font-mono font-bold" "Mesha"))
-                              (:div :class "hidden md:block"
-                                    (:div :class "ml-10 flex items-baseline space-x-4"
-                                          (active-button "Home")
-                                          (button "Draw"))))))))))
-
-(defun get-main-view ()
-  (with-html-string
-    (:doctype)
-    (:html
-     (:head
-      (:title "Mesha")
-      (:meta :charset"UTF-8")
-      (:meta :name "viewport" :content "width=device-width, initial-scale=1.0")
-      (:link :href "https://cdn.quilljs.com/1.3.6/quill.bubble.css" :rel "stylesheet")
-      (:script :src "https://unpkg.com/htmx.org@1.9.6")
-      (:script :src "https://unpkg.com/alpinejs" :defer "")
-      (:script :src "https://cdn.tailwindcss.com")
-      (:script :src "https://cdn.quilljs.com/1.3.6/quill.js")
-      (:script :src "https://cdnjs.cloudflare.com/ajax/libs/mousetrap/1.6.5/mousetrap.min.js")
-      (:script
-       (:raw (get-mesha-script))))
-     (:body :class "bg-gray-300 dark:bg-gray-700"
-            (:div :class "flex flex-col h-screen"
-                  (get-nav-bar)
-                  (:main :class "h-full"
-                         (:div :class "w-full h-full grow flex px-6 py-6"
-                               (:div :id "content" :class "bg-gray-600 w-full px-6 py-6"
-                                     (button "Click me" :hx-post "/clicked" :hx-swap "innerHTML")
-                                     (:div :class "rounded-xl bg-gray-200 shadow-lg p-5"
-                                           (:div :id "editor-container" :x-init (parenscript:ps (init-mesha-client)) :class "max-h-full"))))))))))
-
-(defparameter *button-state* nil)
-
-(defun handler (env)
-  (declare (optimize (debug 3) (speed 0)))
-  (flet ((respond-ok (output &optional (output-type "text/html"))
-           `(200
-             (list :content-type ,output-type)
-             (,output)))
-         (respond-404 (output &optional (output-type "text/html"))
-           `(404
-             (list :content-type ,output-type)
-             (,output))))
-    (let ((path (getf env :path-info)))
-      (match path
-        ("/" (respond-ok (get-main-view)))
-        ("/clicked" (progn
-                      (setf *button-state* (not *button-state*))
-                      (if *button-state*
-                          (respond-ok (with-html-string (:div :x-init (parenscript:ps (mesha-get-block 1))
-                                                              "Get block 1")))
-                          (respond-ok (with-html-string (:div :x-init (parenscript:ps (mesha-get-block 2))
-                                                              "Get block 2"))))))
-        (_ (respond-404 (with-html-string (:div (:h1 "Error 404")
-                                                (:p "Content not found")))))))))
-
 (defun main ()
   (log:info "Starting mesha server")
   
   (setf yason:*symbol-encoder* #'yason:encode-symbol-as-lowercase
         yason:*symbol-key-encoder* #'yason:encode-symbol-as-lowercase)
 
-  ;; ignore htmx attributesp
-  (pushnew "hx-" *unvalidated-attribute-prefixes* :test #'equal)
-  ;; ignore alpine.js attributes
-  (pushnew "x-" *unvalidated-attribute-prefixes* :test #'equal)
-  (pushnew "@" *unvalidated-attribute-prefixes* :test #'equal)
-
-  (setf *server* (clack:clackup (lambda (env) (funcall 'handler env))
-                                ;; :address "0.0.0.0"
-                                :port 13333)
-        *websocket-server* (clack:clackup (lambda (env) (funcall 'setup-websocket env))
+  (setf *server* (clack:clackup (lambda (env) (funcall 'setup-websocket env))
                                           ;; :address "0.0.0.0"
                                           :port 13330)))
 
 (defun shutdown ()
   (clack:stop *server*)
-  (setf *server* nil
-        *current-client* nil))
+  (setf *current-client* nil))
 
-(main)
