@@ -31,17 +31,21 @@ impl Default for App {
         use lru::LruCache;
         use std::num::NonZeroUsize;
 
+        let test_data = vec![(Rect::from_two_pos(pos2(200.0, 50.0), pos2(600.0, 150.0)), "Test"),
+                             (Rect::from_two_pos(pos2(200.0, 150.0), pos2(600.0, 250.0)), "123"),
+                             (Rect::from_two_pos(pos2(200.0, 250.0), pos2(400.0, 350.0)), "Parent"),
+                             (Rect::from_two_pos(pos2(400.0, 250.0), pos2(600.0, 300.0)), "1337"),
+                             (Rect::from_two_pos(pos2(400.0, 300.0), pos2(600.0, 350.0)), "Kiran"),
+                             (Rect::from_two_pos(pos2(200.0, 350.0), pos2(400.0, 450.0)), "List"),
+                             (Rect::from_two_pos(pos2(400.0, 350.0), pos2(450.0, 450.0)), "1"),
+                             (Rect::from_two_pos(pos2(450.0, 350.0), pos2(500.0, 450.0)), "2"),
+                             (Rect::from_two_pos(pos2(500.0, 350.0), pos2(550.0, 450.0)), "3"),
+                             (Rect::from_two_pos(pos2(550.0, 350.0), pos2(600.0, 450.0)), "4")];
+
         let mut cells = LruCache::new(NonZeroUsize::new(25).unwrap());
-        cells.put(1, Cell { rect: Rect::from_two_pos(pos2(200.0, 50.0), pos2(600.0, 150.0)), content: "Test".to_owned() });
-        cells.put(2, Cell { rect: Rect::from_two_pos(pos2(200.0, 150.0), pos2(600.0, 250.0)), content: "123".to_owned() });
-        cells.put(3, Cell { rect: Rect::from_two_pos(pos2(200.0, 250.0), pos2(400.0, 350.0)), content: "Parent".to_owned() });
-        cells.put(4, Cell { rect: Rect::from_two_pos(pos2(400.0, 250.0), pos2(600.0, 300.0)), content: "1337".to_owned() });
-        cells.put(5, Cell { rect: Rect::from_two_pos(pos2(400.0, 300.0), pos2(600.0, 350.0)), content: "Kiran".to_owned() });
-        cells.put(6, Cell { rect: Rect::from_two_pos(pos2(200.0, 350.0), pos2(400.0, 450.0)), content: "List".to_owned() });
-        cells.put(7, Cell { rect: Rect::from_two_pos(pos2(400.0, 350.0), pos2(450.0, 450.0)), content: "1".to_owned() });
-        cells.put(8, Cell { rect: Rect::from_two_pos(pos2(450.0, 350.0), pos2(500.0, 450.0)), content: "2".to_owned() });
-        cells.put(9, Cell { rect: Rect::from_two_pos(pos2(500.0, 350.0), pos2(550.0, 450.0)), content: "3".to_owned() });
-        cells.put(10, Cell { rect: Rect::from_two_pos(pos2(550.0, 350.0), pos2(600.0, 450.0)), content:  "4".to_owned() });
+        for (i, c) in test_data.iter().enumerate() {
+            cells.put(i + 1, Cell { rect: c.0, content: c.1.to_owned() });
+        }
 
         Self {
             cells
