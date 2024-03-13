@@ -17,8 +17,12 @@ fn main() -> Result<(), eframe::Error> {
 }
 
 struct App {
-    rects: Vec<egui::Rect>,
-    cells: lru::LruCache<usize, String>,
+    cells: lru::LruCache<usize, Cell>,
+}
+
+struct Cell {
+    rect: egui::Rect,
+    content: String
 }
 
 impl Default for App {
@@ -28,30 +32,19 @@ impl Default for App {
         use std::num::NonZeroUsize;
 
         let mut cells = LruCache::new(NonZeroUsize::new(25).unwrap());
-        cells.put(1, "Test".to_owned());
-        cells.put(2, "123".to_owned());
-        cells.put(3, "Parent".to_owned());
-        cells.put(4, "1337".to_owned());
-        cells.put(5, "Kiran".to_owned());
-        cells.put(6, "List".to_owned());
-        cells.put(7, "1".to_owned());
-        cells.put(8, "2".to_owned());
-        cells.put(9, "3".to_owned());
-        cells.put(10, "4".to_owned());
+        cells.put(1, Cell { rect: Rect::from_two_pos(pos2(200.0, 50.0), pos2(600.0, 150.0)), content: "Test".to_owned() });
+        cells.put(2, Cell { rect: Rect::from_two_pos(pos2(200.0, 150.0), pos2(600.0, 250.0)), content: "123".to_owned() });
+        cells.put(3, Cell { rect: Rect::from_two_pos(pos2(200.0, 250.0), pos2(400.0, 350.0)), content: "Parent".to_owned() });
+        cells.put(4, Cell { rect: Rect::from_two_pos(pos2(400.0, 250.0), pos2(600.0, 300.0)), content: "1337".to_owned() });
+        cells.put(5, Cell { rect: Rect::from_two_pos(pos2(400.0, 300.0), pos2(600.0, 350.0)), content: "Kiran".to_owned() });
+        cells.put(6, Cell { rect: Rect::from_two_pos(pos2(200.0, 350.0), pos2(400.0, 450.0)), content: "List".to_owned() });
+        cells.put(7, Cell { rect: Rect::from_two_pos(pos2(400.0, 350.0), pos2(450.0, 450.0)), content: "1".to_owned() });
+        cells.put(8, Cell { rect: Rect::from_two_pos(pos2(450.0, 350.0), pos2(500.0, 450.0)), content: "2".to_owned() });
+        cells.put(9, Cell { rect: Rect::from_two_pos(pos2(500.0, 350.0), pos2(550.0, 450.0)), content: "3".to_owned() });
+        cells.put(10, Cell { rect: Rect::from_two_pos(pos2(550.0, 350.0), pos2(600.0, 450.0)), content:  "4".to_owned() });
 
         Self {
-            rects: vec![Rect::from_two_pos(pos2(200.0, 50.0), pos2(600.0, 150.0)),
-                        Rect::from_two_pos(pos2(200.0, 150.0), pos2(600.0, 250.0)),
-                        Rect::from_two_pos(pos2(200.0, 250.0), pos2(400.0, 350.0)),
-                        Rect::from_two_pos(pos2(400.0, 250.0), pos2(600.0, 300.0)),
-                        Rect::from_two_pos(pos2(400.0, 300.0), pos2(600.0, 350.0)),
-                        Rect::from_two_pos(pos2(200.0, 350.0), pos2(400.0, 450.0)),
-                        Rect::from_two_pos(pos2(400.0, 350.0), pos2(450.0, 450.0)),
-                        Rect::from_two_pos(pos2(450.0, 350.0), pos2(500.0, 450.0)),
-                        Rect::from_two_pos(pos2(500.0, 350.0), pos2(550.0, 450.0)),
-                        Rect::from_two_pos(pos2(550.0, 350.0), pos2(600.0, 450.0)),
-            ],
-            cells,
+            cells
         }
     }
 }
@@ -61,23 +54,13 @@ impl eframe::App for App {
         use egui::*;
 
         CentralPanel::default().show(ctx, |ui| {
-            let texts = &self.cells;
-
-            {
+            for (_key, cell) in &self.cells {
                 let stroke = Stroke::new(3.0, Color32::WHITE);
-
-                for rect in &self.rects {
-                    let p = ui.painter_at(*rect);
-                    p.rect_stroke(*rect, Rounding::ZERO, stroke);
-                }
-            }
-
-            {
-                for (rect, (_key, text)) in std::iter::zip(&self.rects, texts) {
-                    let p = ui.painter_at(*rect);
-                    p.text(rect.shrink(10.0).left_top(), Align2::LEFT_TOP, text, TextStyle::Heading.resolve(&ctx.style()), Color32::WHITE);
-                    // ui.put(*rect, egui::Label::new(text));
-                }
+                let rect = cell.rect;
+                let text = &cell.content;
+                let p = ui.painter_at(rect);
+                p.rect_stroke(rect, Rounding::ZERO, stroke);
+                p.text(rect.shrink(10.0).left_top(), Align2::LEFT_TOP, text, TextStyle::Heading.resolve(&ctx.style()), Color32::WHITE);
             }
         });
     }
