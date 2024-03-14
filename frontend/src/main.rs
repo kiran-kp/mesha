@@ -17,6 +17,7 @@ fn main() -> Result<(), eframe::Error> {
 }
 
 struct App {
+    current_selection: usize,
     cells: lru::LruCache<usize, Cell>,
 }
 
@@ -48,6 +49,7 @@ impl Default for App {
         }
 
         Self {
+            current_selection: 1,
             cells
         }
     }
@@ -58,14 +60,23 @@ impl eframe::App for App {
         use egui::*;
 
         CentralPanel::default().show(ctx, |ui| {
-            for (_key, cell) in &self.cells {
+            for (key, cell) in &self.cells {
                 let stroke = Stroke::new(3.0, Color32::WHITE);
                 let rect = cell.rect;
+                if ui.rect_contains_pointer(rect) {
+                    self.current_selection = *key;
+                }
                 let text = &cell.content;
                 let p = ui.painter_at(rect);
                 p.rect_stroke(rect, Rounding::ZERO, stroke);
                 p.text(rect.shrink(10.0).left_top(), Align2::LEFT_TOP, text, TextStyle::Heading.resolve(&ctx.style()), Color32::WHITE);
             }
+
+            let stroke = Stroke::new(4.0, Color32::RED);
+            let selected_cell = &self.cells.get(&self.current_selection).unwrap();
+            let rect = selected_cell.rect;
+            let p = ui.painter_at(rect.expand(3.0));
+            p.rect_stroke(rect, Rounding::ZERO, stroke);
         });
     }
 }
