@@ -57,6 +57,9 @@ impl Default for App {
     }
 }
 
+const ACCEPT_CELL_EDIT: egui::KeyboardShortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE,
+                                                                             egui::Key::Enter);
+
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         use egui::*;
@@ -72,7 +75,12 @@ impl eframe::App for App {
                 let p = ui.painter_at(rect);
                 p.rect_stroke(rect, Rounding::ZERO, stroke);
                 if self.current_edit.is_none() || self.current_edit.unwrap() != *key {
-                    p.text(rect.shrink(10.0).left_top(), Align2::LEFT_TOP, text, TextStyle::Heading.resolve(&ctx.style()), Color32::WHITE);
+                    p.text(rect.shrink(10.0).
+                           left_top(),
+                           Align2::LEFT_TOP,
+                           text,
+                           TextStyle::Heading.resolve(&ctx.style()),
+                           Color32::WHITE);
                 }
             }
 
@@ -91,35 +99,30 @@ impl eframe::App for App {
             };
 
             let mut should_set_focus = false;
-            if ui.interact_with_hovered(rect, true, Id::new(format!("Cell: {0}", self.current_selection)), s).double_clicked() {
+            if ui.interact_with_hovered(rect,
+                                        true,
+                                        Id::new(format!("Cell: {0}",
+                                                        self.current_selection)),
+                                        s).double_clicked() {
                 self.current_edit = Some(self.current_selection);
                 should_set_focus = true;
             }
 
             if let Some(k) = self.current_edit {
-                let cell = self.cells.get_mut(&k).unwrap();
-                let text_edit = TextEdit::multiline(&mut cell.content);
-                let response = ui.put(cell.rect.shrink(2.0), text_edit);
-                if should_set_focus {
-                    response.request_focus();
-                }
-
-                let s = KeyboardShortcut::new(Modifiers::NONE, Key::Enter);
-                if response.has_focus() {
-                    if ui.input_mut(|i| i.consume_shortcut(&s)) {
-                        response.surrender_focus();
-                        if let Some(mut state) = TextEdit::load_state(ui.ctx(), response.id) {
-                            if let Some(mut ccursor_range) = state.cursor.char_range() {
-                                state.cursor.set_char_range(Some(ccursor_range));
-                                state.store(ui.ctx(), response.id);
-                            }
-                        }
-                        // self.current_edit = None;
-                    }
-                }
-
-                if response.lost_focus() {
+                if ui.input_mut(|i| i.consume_shortcut(&ACCEPT_CELL_EDIT)) {
                     self.current_edit = None;
+                } else {
+                    
+                    let cell = self.cells.get_mut(&k).unwrap();
+                    let text_edit = TextEdit::multiline(&mut cell.content);
+                    let response = ui.put(cell.rect.shrink(2.0), text_edit);
+                    if should_set_focus {
+                        response.request_focus();
+                    }
+
+                    if response.lost_focus() {
+                        self.current_edit = None;
+                    }
                 }
             }
         });
