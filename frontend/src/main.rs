@@ -65,16 +65,16 @@ impl eframe::App for App {
         use egui::*;
 
         CentralPanel::default().show(ctx, |ui| {
-            for (key, cell) in &self.cells {
+            for (&key, cell) in &self.cells {
                 let stroke = Stroke::new(3.0, Color32::WHITE);
                 let rect = cell.rect;
                 if ui.rect_contains_pointer(rect) {
-                    self.current_selection = *key;
+                    self.current_selection = key;
                 }
                 let text = &cell.content;
                 let p = ui.painter_at(rect);
                 p.rect_stroke(rect, Rounding::ZERO, stroke);
-                if self.current_edit.is_none() || self.current_edit.unwrap() != *key {
+                if self.current_edit.is_none() || self.current_edit.unwrap() != key {
                     p.text(rect.shrink(10.0).
                            left_top(),
                            Align2::LEFT_TOP,
@@ -99,6 +99,7 @@ impl eframe::App for App {
             };
 
             let mut should_set_focus = false;
+
             if ui.interact_with_hovered(rect,
                                         true,
                                         Id::new(format!("Cell: {0}",
