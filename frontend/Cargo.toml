@@ -9,4 +9,4 @@ edition = "2021"
 eframe = "0.26"
 egui = "0.26"
 lru = "0.12"
-
+websocket = "0.24"

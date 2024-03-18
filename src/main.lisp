@@ -27,8 +27,7 @@
                                                          (cons 7 (make-instance 'cell :parent 6 :content 1))
                                                          (cons 8 (make-instance 'cell :parent 6 :content 2))
                                                          (cons 9 (make-instance 'cell :parent 6 :content 3))
-                                                         (cons 10 (make-instance 'cell :parent 6 :content 4))
-                                                         (cons 11 (make-instance 'cell :parent 6 :content 5)))))
+                                                         (cons 10 (make-instance 'cell :parent 6 :content 4)))))
 
 (defun send-websocket-message (client msg)
   (websocket-driver:send (slot-value client 'connection) msg))
@@ -94,4 +93,3 @@
 (defun shutdown ()
   (clack:stop *server*)
   (setf *current-client* nil))
-
