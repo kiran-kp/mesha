@@ -198,7 +198,9 @@ impl eframe::App for App {
                 } else {
                     
                     let cell = self.cells.get_mut(&k).unwrap();
-                    let text_edit = TextEdit::multiline(&mut cell.content);
+                    let text_edit = TextEdit::multiline(&mut cell.content)
+                        .desired_width(f32::INFINITY)
+                        .frame(false);
                     let response = ui.put(cell.rect.shrink(2.0), text_edit);
                     if should_set_focus {
                         response.request_focus();
