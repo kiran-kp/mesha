@@ -1,9 +1,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::convert::{From, Into};
+use std::marker::Copy;
 use std::sync::mpsc::channel;
 use std::thread;
 
 use eframe::egui;
+use serde::{Deserialize, Serialize};
 use websocket::client::ClientBuilder;
 use websocket::{Message, OwnedMessage};
 
@@ -81,6 +84,8 @@ fn main() -> Result<(), eframe::Error> {
 			}
 		}
 	});
+
+    // sender.send(OwnedMessage::Text("(:set-viewport 0 0 800 600)"));
     
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([800.0, 600.0]),
@@ -105,8 +110,36 @@ struct App {
     cells: lru::LruCache<usize, Cell>,
 }
 
+#[derive(Serialize, Deserialize, Copy, Clone)]
+struct Rect {
+    x0: f32,
+    y0: f32,
+    x1: f32,
+    y1: f32
+}
+
+impl From<egui::Rect> for Rect {
+    fn from(r: egui::Rect) -> Rect {
+        let x0y0 = r.left_top();
+        let x1y1 = r.right_bottom();
+        Rect {
+            x0: x0y0.x,
+            y0: x0y0.y,
+            x1: x1y1.x,
+            y1: x1y1.y,            
+        }
+    }
+}
+
+impl Into<egui::Rect> for Rect {
+    fn into(self) -> egui::Rect {
+        egui::Rect::from_two_pos(egui::pos2(self.x0, self.y0), egui::pos2(self.x1, self.y1))
+    }
+}
+
+#[derive(Serialize, Deserialize)]
 struct Cell {
-    rect: egui::Rect,
+    rect: Rect,
     content: String
 }
 
@@ -129,7 +162,7 @@ impl Default for App {
 
         let mut cells = LruCache::new(NonZeroUsize::new(25).unwrap());
         for (i, c) in test_data.iter().enumerate() {
-            cells.put(i + 1, Cell { rect: c.0, content: c.1.to_owned() });
+            cells.put(i + 1, Cell { rect: c.0.into(), content: c.1.to_owned() });
         }
 
         Self {
@@ -150,7 +183,7 @@ impl eframe::App for App {
         CentralPanel::default().show(ctx, |ui| {
             for (&key, cell) in &self.cells {
                 let stroke = Stroke::new(3.0, Color32::WHITE);
-                let rect = cell.rect;
+                let rect = cell.rect.into();
                 if ui.rect_contains_pointer(rect) {
                     self.current_selection = key;
                 }
@@ -169,7 +202,7 @@ impl eframe::App for App {
 
             let stroke = Stroke::new(3.0, Color32::RED);
             let selected_cell = self.cells.get_mut(&self.current_selection).unwrap();
-            let rect = selected_cell.rect;
+            let rect: egui::Rect = selected_cell.rect.into();
             {
                 let p = ui.painter_at(rect.expand(2.0));
                 p.rect_stroke(rect, Rounding::ZERO, stroke);
@@ -198,10 +231,9 @@ impl eframe::App for App {
                 } else {
                     
                     let cell = self.cells.get_mut(&k).unwrap();
-                    let text_edit = TextEdit::multiline(&mut cell.content)
-                        .desired_width(f32::INFINITY)
-                        .frame(false);
-                    let response = ui.put(cell.rect.shrink(2.0), text_edit);
+                    let text_edit = TextEdit::multiline(&mut cell.content);
+                    let rect: egui::Rect = cell.rect.into();
+                    let response = ui.put(rect.shrink(2.0), text_edit);
                     if should_set_focus {
                         response.request_focus();
                     }
