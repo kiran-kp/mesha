@@ -77,7 +77,7 @@
                        (text-render-context-position ctx)
                        (text-render-context-size ctx)
                        (text-render-context-spacing ctx)
-                       (if (text-edit item) raylib:+red+ (text-render-context-color ctx))))
+                       (if (text-edit item) :red (text-render-context-color ctx))))
 
 (defmethod update ((item cell) msg)
   (match msg
@@ -96,15 +96,15 @@
 (defmethod render ((item cell) (ctx cell-render-context))
   (let* ((bounds (cell-render-context-size ctx))
          (pos (cell-render-context-position ctx))
-         (rect (raylib:make-rectangle-v pos bounds))
+         (rect (ui:make-rectangle-v pos bounds))
          (is-hovering (raylib:check-collision-point-rec (raylib:get-mouse-position) rect))
          (is-clicked (and is-hovering (raylib:is-mouse-button-pressed :mouse-button-left))))
-    (raylib:draw-rectangle-v pos bounds raylib:+gray+)
+    (raylib:draw-rectangle-v pos bounds :gray)
     (raylib:draw-rectangle-lines (round (vx pos))
                                  (round (vy pos))
                                  (round (vx bounds))
                                  (round (vy bounds))
-                                 (if is-hovering raylib:+white+ raylib:+black+))
+                                 (if is-hovering :white :black))
     (when is-clicked
       (push (list item 'enter-edit-mode) *messages*))
 
@@ -115,7 +115,7 @@
           (push (list item 'exit-edit-mode) *messages*))
         (when (equal k :key-backspace)
           (push (list item 'received-input-backspace) *messages*)))
-      (let ((c (raylib:get-char-pressed)))
+      (let ((c (raylib::get-char-pressed)))
         (when (not (equal 0 c))
           (push (list item (list 'received-input-codepoint c)) *messages*))))
     
@@ -124,7 +124,7 @@
                                       :position (v+ pos (vec 5 5))
                                       :size 32.0
                                       :spacing 1.0
-                                      :color raylib:+white+))))
+                                      :color :white))))
 
 (defun grid-iterate-cells (g fn)
   (let ((col 0))
@@ -170,7 +170,7 @@
   (unwind-protect
        (progn
          (raylib:begin-drawing)
-         (raylib:clear-background raylib:+black+)
+         (raylib:clear-background :black)
          (raylib:draw-fps 20 20)
 
          (dolist (msg-params *messages*)

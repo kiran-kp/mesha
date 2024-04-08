@@ -8,11 +8,14 @@
 
 ;; Raylib wrappers
 
+(defun make-rectangle-v (pos size)
+  (raylib:make-rectangle :x (vx pos) :y (vy pos) :width (vx size) :height (vy size)))
+
 (defun is-point-in-rect? (point rect)
   (raylib:check-collision-point-rec point rect))
 
 (defun is-point-in-rect-v? (point rect-position rect-size)
-  (is-point-in-rect? point (raylib:make-rectangle-v rect-position rect-size)))
+  (is-point-in-rect? point (make-rectangle-v rect-position rect-size)))
 
 (defun measure-text (text)
   (let* ((text-height (get-style-value :text-height)))
@@ -27,11 +30,11 @@
                        (get-style-value color)))
 
 (defun render-rect (position size color)
-  (let ((rect (raylib:make-rectangle-v position size)))
+  (let ((rect (make-rectangle-v position size)))
     (raylib:draw-rectangle-rec rect (get-style-value color))))
 
 (defun render-frame (position size color draw-border?)
-  (let ((rect (raylib:make-rectangle-v position size)))
+  (let ((rect (make-rectangle-v position size)))
     (raylib:draw-rectangle-rec rect (get-style-value color))
     (when draw-border?
       (raylib:draw-rectangle-lines-ex rect 1.0 '(10 10 10 255)))))
@@ -82,7 +85,7 @@
     (is-point-in-rect? mouse-position rect)))
 
 (defun is-mouse-over-rect-v? (pos size)
-  (is-mouse-over-rect? (raylib:make-rectangle-v pos size)))
+  (is-mouse-over-rect? (make-rectangle-v pos size)))
 
 ;; Style
 

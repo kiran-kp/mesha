@@ -13,7 +13,7 @@
   :license  "MIT"
   :version "0.0.1"
   :serial t
-  :pathname "lisp/"
+  :pathname "src/"
   :build-operation "program-op"
   :build-pathname "../mesha"
   :entry-point "mesha:main"
