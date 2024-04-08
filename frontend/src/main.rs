@@ -85,7 +85,7 @@ fn main() -> Result<(), eframe::Error> {
 		}
 	});
 
-    // sender.send(OwnedMessage::Text("(:set-viewport 0 0 800 600)"));
+    tx.send(OwnedMessage::Text("(:set-viewport 0 0 800 600)".to_string()));
     
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([800.0, 600.0]),
