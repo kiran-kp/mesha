@@ -28,4 +28,7 @@
                #:cl-raylib
                #:log4cl
                #:str
-               #:trivia))
+               #:trivia
+               #:queues
+               #:queues.simple-queue
+               #:queues.simple-cqueue))

@@ -14,5 +14,6 @@
   (:use #:cl
         #:3d-vectors
         #:alexandria
-        #:trivia)
+        #:trivia
+        #:queues)
   (:export #:main))
