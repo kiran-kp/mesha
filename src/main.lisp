@@ -24,7 +24,7 @@
 (defstruct visible-cell
   top-left
   size
-  content)
+  id)
 
 (defclass context ()
   ((visible-cells :initarg :visible-cells :initform nil)
@@ -41,16 +41,16 @@
   (make-instance 'application
                  :context (make-instance 'context
                                          :visible-cells (list
-                                                         (make-visible-cell :top-left (vec 200.0 50.0) :size (vec 400.0 100.0) :content "Test")
-                                                         (make-visible-cell :top-left (vec 200.0 150.0) :size (vec 400.0 100.0) :content "123")
-                                                         (make-visible-cell :top-left (vec 200.0 250.0) :size (vec 200.0 100.0) :content "Parent")
-                                                         (make-visible-cell :top-left (vec 400.0 250.0) :size (vec 200.0 50.0) :content "1337")
-                                                         (make-visible-cell :top-left (vec 400.0 300.0) :size (vec 200.0 50.0) :content "Kiran")
-                                                         (make-visible-cell :top-left (vec 200.0 350.0) :size (vec 200.0 100.0) :content "List")
-                                                         (make-visible-cell :top-left (vec 400.0 350.0) :size (vec 50.0 100.0) :content "1")
-                                                         (make-visible-cell :top-left (vec 450.0 350.0) :size (vec 50.0 100.0) :content "2")
-                                                         (make-visible-cell :top-left (vec 500.0 350.0) :size (vec 50.0 100.0) :content "3")
-                                                         (make-visible-cell :top-left (vec 550.0 350.0) :size (vec 50.0 100.0) :content "4"))
+                                                         (make-visible-cell :top-left (vec 200.0 50.0) :size (vec 400.0 100.0) :id 1)
+                                                         (make-visible-cell :top-left (vec 200.0 150.0) :size (vec 400.0 100.0) :id 2)
+                                                         (make-visible-cell :top-left (vec 200.0 250.0) :size (vec 200.0 100.0) :id 3)
+                                                         (make-visible-cell :top-left (vec 400.0 250.0) :size (vec 200.0 50.0) :id 4)
+                                                         (make-visible-cell :top-left (vec 400.0 300.0) :size (vec 200.0 50.0) :id 5)
+                                                         (make-visible-cell :top-left (vec 200.0 350.0) :size (vec 200.0 100.0) :id 6)
+                                                         (make-visible-cell :top-left (vec 400.0 350.0) :size (vec 50.0 100.0) :id 7)
+                                                         (make-visible-cell :top-left (vec 450.0 350.0) :size (vec 50.0 100.0) :id 8)
+                                                         (make-visible-cell :top-left (vec 500.0 350.0) :size (vec 50.0 100.0) :id 9)
+                                                         (make-visible-cell :top-left (vec 550.0 350.0) :size (vec 50.0 100.0) :id 10))
                                          :viewport (make-viewport :width 800 :height 600))))
 
 
@@ -96,9 +96,6 @@
 (defun main-loop ()
   (process-commands)
 
-  (dolist (msg-params *messages*)
-    (update (nth 0 msg-params) (nth 1 msg-params)))
-
   (raylib:with-drawing
     (raylib:clear-background :black)
     (raylib:draw-fps 20 20)
@@ -107,8 +104,16 @@
     
     (with-slots (context) *application*
       (with-slots (visible-cells) context
-        (loop for c in visible-cells
-              do (raylib:draw-rectangle-lines-ex (ui:make-rectangle-v (visible-cell-top-left c) (visible-cell-size c)) 1.0 :red))))))
+        (let ((hovering nil))
+          (loop for c in visible-cells
+                do
+                   (let ((rect (ui:make-rectangle-v (visible-cell-top-left c) (visible-cell-size c)))
+                         (cursor (raylib:get-mouse-position)))
+                     (when (raylib:check-collision-point-rec cursor rect)
+                       (setf hovering rect))
+                     (raylib:draw-rectangle-lines-ex rect 1.0 :red)))
+          (when hovering
+            (raylib:draw-rectangle-lines-ex hovering 2.5 :blue)))))))
 
 (defun main ()
   (log:info "Mesha starting up")
