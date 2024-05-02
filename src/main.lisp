@@ -17,7 +17,7 @@
   color)
 
 (defclass cell ()
-  ((parent :initarg :parent :initform 0)
+  ((parent :initarg :parent :initform 0 :accessor cell-parent)
    (children :initarg :children :initform nil)
    (content :initarg :content)))
 
@@ -67,8 +67,6 @@
                                                          (cons 9 (make-instance 'cell :parent 6 :content 3))
                                                          (cons 10 (make-instance 'cell :parent 6 :content 4)))))
 
-(defparameter *messages* nil)
-
 (define-condition unknown-command-error (error)
   ((command :initarg :command :reader command)))
 
@@ -93,27 +91,46 @@
   (raylib:unload-font *font*)
   (setf *font* nil))
 
-(defun main-loop ()
+(defparameter *current-root* 0)
+
+(defparameter *start-pos* (vec 200.0 50.0))
+(defparameter *row-size* 100.0)
+
+(defun update ()
   (process-commands)
+  (loop for id being the hash-keys of *cells*
+          using (hash-value c)
+        do (when (equal *current-root* (cell-parent c))
+             ))
+  (with-slots (context) *application*
+    (with-slots (visible-cells) context
+      ())))
+
+(defun render ()
+  (with-slots (context) *application*
+    (with-slots (visible-cells) context
+      (let ((hovering nil))
+        (loop
+          for c in visible-cells
+          do (let ((rect (ui:make-rectangle-v (visible-cell-top-left c) (visible-cell-size c)))
+                   (cursor (raylib:get-mouse-position)))
+               (when (raylib:check-collision-point-rec cursor rect)
+                 (setf hovering rect))
+               (raylib:draw-rectangle-lines-ex rect 1.0 :red)))
+        (when hovering
+          (setf (raylib:rectangle-x hovering) (- (raylib:rectangle-x hovering) 2.5)
+                (raylib:rectangle-y hovering) (- (raylib:rectangle-y hovering) 2.5)
+                (raylib:rectangle-width hovering) (+ (raylib:rectangle-width hovering) 5.0)
+                (raylib:rectangle-height hovering) (+ (raylib:rectangle-height hovering) 5.0))
+          (raylib:draw-rectangle-lines-ex hovering 5.0 :blue))))))
+
+(defun main-loop ()
+  (update)
 
   (raylib:with-drawing
     (raylib:clear-background :black)
     (raylib:draw-fps 20 20)
-
-    (setf *messages* nil)
-    
-    (with-slots (context) *application*
-      (with-slots (visible-cells) context
-        (let ((hovering nil))
-          (loop for c in visible-cells
-                do
-                   (let ((rect (ui:make-rectangle-v (visible-cell-top-left c) (visible-cell-size c)))
-                         (cursor (raylib:get-mouse-position)))
-                     (when (raylib:check-collision-point-rec cursor rect)
-                       (setf hovering rect))
-                     (raylib:draw-rectangle-lines-ex rect 1.0 :red)))
-          (when hovering
-            (raylib:draw-rectangle-lines-ex hovering 2.5 :blue)))))))
+    (render)))
 
 (defun main ()
   (log:info "Mesha starting up")
