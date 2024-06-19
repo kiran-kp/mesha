@@ -1,6 +1,0 @@
-[submodule "extern/cl-raylib"]
-	path = extern/cl-raylib
-	url = https://github.com/kiran-kp/cl-raylib.git
-[submodule "extern/raylib"]
-	path = extern/raylib
-	url = https://github.com/raysan5/raylib.git
