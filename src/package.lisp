@@ -10,10 +10,14 @@
            #:update
            #:draw))
 
+(defpackage :application
+  (:use #:cl)
+  (:export #:run))
+
 (defpackage :mesha
   (:use #:cl
         #:3d-vectors
-        #:alexandria
-        #:trivia
         #:queues)
+  (:import-from :serapeum #:dict)
+  (:import-from :trivia #:match)
   (:export #:main))

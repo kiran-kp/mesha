@@ -18,14 +18,16 @@
   :build-pathname "../mesha"
   :entry-point "mesha:main"
   :components ((:file "package")
-               (:file "ui")
+               (:file "application")
+               (:file "cell")
                (:file "main"))
   :depends-on (#:alexandria
+               #:serapeum
                #:asdf
                #:3d-vectors
                #:bordeaux-threads
                #:cffi
-               #:cl-raylib
+               #:sdl2
                #:log4cl
                #:str
                #:trivia

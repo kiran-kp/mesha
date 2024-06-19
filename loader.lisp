@@ -1,5 +1,4 @@
 (uiop:chdir "/home/kiran/projects/mesha")
 (pushnew #P"/home/kiran/projects/mesha/extern/" asdf:*central-registry*)
-(ql:quickload "cffi")
-(pushnew #P"/home/kiran/projects/mesha/build/extern/raylib/raylib/" cffi:*foreign-library-directories*)
 (ql:quickload "mesha")
+
