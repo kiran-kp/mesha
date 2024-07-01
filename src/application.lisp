@@ -16,17 +16,18 @@
 
 (defun application-run (app init-fn update-fn render-fn)
   (log:info "Starting application loop")
+  (funcall init-fn app)
   (let ((view (get-viewport app)))
     (sdl2:with-init (:everything)
       (sdl2:with-window (win :title "Mesha" :flags '(:shown))
-        (sdl2:with-renderer (renderer win :flags '(:accelerated))
+        (sdl2:with-renderer (renderer win :flags '(:accelerated :presentvsync))
           (sdl2:with-event-loop (:method :poll)
             (:idle
              ()
+             (sdl2:set-render-draw-color renderer 0 0 0 255)
+             (sdl2:render-clear renderer)
              (funcall update-fn app)
-             (funcall render-fn app)
-             (sdl2:set-render-draw-color renderer 0 255 0 255)
-             (sdl2:render-draw-rect renderer (sdl2:make-rect 200 200 35 35))
+             (funcall render-fn app renderer)
              (sdl2:render-present renderer)
              (sdl2:delay 33))
             (:quit
