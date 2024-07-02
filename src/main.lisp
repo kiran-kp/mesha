@@ -20,7 +20,7 @@
       (match (first cmd)
         (:make-table
          (with-slots (document) app
-           (log:info "Making table")
+           (v:debug :commands "Making table")
            (setf document (make-table 3 5 nil))))
         (:set-cell-text
          #+nil
@@ -47,7 +47,7 @@
              (sdl2:render-draw-rect renderer box))))
 
 (defun init (app)
-  (log:info "Queuing command")
+  (v:debug :commands "Queuing startup commands")
   (enqueue-command app '(:make-table)))
 
 (defun main ()
@@ -56,7 +56,7 @@
                                  (init a)))
                    (lambda (a) (update a))
                    (lambda (a r) (render a r)))
-  (log:info "Bye"))
+  (v:info :application "Bye"))
 
 #+nil
 (main)

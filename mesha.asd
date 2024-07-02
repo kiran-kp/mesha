@@ -28,7 +28,7 @@
                #:bordeaux-threads
                #:cffi
                #:sdl2
-               #:log4cl
+               #:verbose
                #:str
                #:trivia
                #:queues

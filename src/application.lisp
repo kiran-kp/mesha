@@ -15,7 +15,7 @@
   (slot-value (slot-value app 'context) 'viewport))
 
 (defun application-run (app init-fn update-fn render-fn)
-  (log:info "Starting application loop")
+  (v:info :application "Starting application loop")
   (funcall init-fn app)
   (let ((view (get-viewport app)))
     (sdl2:with-init (:everything)
@@ -32,6 +32,6 @@
              (sdl2:delay 33))
             (:quit
              ()
-             (log:info "Exiting event loop")
+             (v:info :application "Exiting event loop")
              t)))))))
 
