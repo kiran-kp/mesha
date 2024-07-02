@@ -47,13 +47,14 @@
              (sdl2:render-draw-rect renderer box))))
 
 (defun init (app)
-  (v:debug :commands "Queuing startup commands")
+  (v:info :application "Queuing startup commands")
   (enqueue-command app '(:make-table)))
 
 (defun main ()
   (application-run *application*
-                   (lambda (a) (when *should-init-application*
-                                 (init a)))
+                   (lambda (a)
+                     (when *should-init-application*
+                       (init a)))
                    (lambda (a) (update a))
                    (lambda (a r) (render a r)))
   (v:info :application "Bye"))
