@@ -33,7 +33,7 @@
     tbl))
 
 (defun table-update (tbl msg)
-  (log:info "Received message: ~a" msg))
+  (v:info :cell "Received message: ~a" msg))
 
 (defun row-render (r start-x start-y column-sizes)
   (with-slots (cells height) r
