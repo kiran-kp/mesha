@@ -56,6 +56,7 @@
   (enqueue-command app '(:make-table)))
 
 (defun main ()
+  (cffi:reload-foreign-libraries)
   (application-run *application*
                    (lambda (a)
                      (when *should-init-application*
