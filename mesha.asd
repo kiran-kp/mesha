@@ -18,18 +18,16 @@
   :build-pathname "../mesha"
   :entry-point "mesha:main"
   :components ((:file "package")
+               (:file "native")
                (:file "application")
                (:file "cell")
                (:file "main"))
   :depends-on (#:alexandria
                #:serapeum
-               #:asdf
                #:3d-vectors
-               #:bordeaux-threads
                #:cffi
                #:sdl2
                #:verbose
-               #:str
                #:trivia
                #:queues
                #:queues.simple-queue

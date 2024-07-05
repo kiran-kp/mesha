@@ -1,8 +1,7 @@
 (in-package #:mesha)
 
 (defparameter *application* (make-instance 'application
-                                           :context (make-instance 'context
-                                                                   :viewport (vec 800.0 600.0))))
+                                           :viewport (vec 800.0 600.0)))
 (defparameter *should-init-application* t)
 
 (define-condition unknown-command-error (error)
@@ -50,7 +49,6 @@
                (if (point-in-rectp (vec mx my) r)
                  (sdl2:set-render-draw-color renderer 0 0 255 255)
                  (sdl2:set-render-draw-color renderer 0 255 0 255))
-
                (sdl2:render-draw-rect renderer box)))))
 
 (defun init (app)

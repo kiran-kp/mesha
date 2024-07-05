@@ -10,10 +10,6 @@
            #:update
            #:draw))
 
-(defpackage :application
-  (:use #:cl)
-  (:export #:run))
-
 (defpackage :mesha
   (:use #:cl
         #:3d-vectors
