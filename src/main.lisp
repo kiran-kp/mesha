@@ -1,33 +1,10 @@
 (in-package #:mesha)
 
-(defparameter *application* (make-instance 'application
-                                           :viewport (vec 800.0 600.0)))
-(defparameter *should-init-application* t)
+(defparameter *should-re-init-table* t)
 
 (define-condition unknown-command-error (error)
   ((command :initarg :command :reader command)))
 
-(defun enqueue-command (app command)
-  (with-slots (commands) app
-    (unless (keywordp (first command))
-      (error 'unknown-command-error :command command))
-    (qpush commands command)))
-
-(defun process-commands (app)
-  (with-slots (commands) app
-    (let ((cmd (qpop commands)))
-      (v:debug :commands "Processing ~a" (first cmd))
-      (match (first cmd)
-        (:make-table
-         (with-slots (document) app
-           (setf document (make-table 3 5 nil))))
-        (:set-cell-text
-         #+nil
-         (let ((c (gethash (second cmd) *cells*))
-               (text (third cmd)))
-           (setf (slot-value c 'content) text
-                 (vx (slot-value c 'size)) (raylib:measure-text text 18)))
-         t)))))
 
 (defun update (app)
   (declare (optimize (debug 3) (speed 0)))
@@ -53,17 +30,14 @@
 
 (defun init (app)
   (v:info :application "Queuing startup commands")
-  (enqueue-command app '(:make-table)))
+  (when *should-re-init-table*
+    (enqueue-command app '(:make-table))))
 
 (defun main ()
   (cffi:reload-foreign-libraries)
-  (application-run *application*
-                   (lambda (a)
-                     (when *should-init-application*
-                       (init a)))
-                   (lambda (a) (update a))
-                   (lambda (a r) (render a r)))
+  (application-run)
   (v:info :application "Bye"))
 
 #+nil
 (main)
+

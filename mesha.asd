@@ -18,7 +18,6 @@
   :build-pathname "../mesha"
   :entry-point "mesha:main"
   :components ((:file "package")
-               (:file "native")
                (:file "application")
                (:file "cell")
                (:file "main"))
@@ -29,6 +28,9 @@
                #:sdl2
                #:verbose
                #:trivia
-               #:queues
-               #:queues.simple-queue
-               #:queues.simple-cqueue))
+               #:sb-concurrency))
+
+(asdf:defsystem #:mesha/tools
+  :defsystem-depends-on (:clog)
+  :depends-on (#:mesha #:clog/tools)
+  :components ())
