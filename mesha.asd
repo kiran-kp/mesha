@@ -19,7 +19,7 @@
   :entry-point "mesha:main"
   :components ((:file "package")
                (:file "application")
-               (:file "cell")
+               (:file "document")
                (:file "main"))
   :depends-on (#:alexandria
                #:serapeum
@@ -28,6 +28,8 @@
                #:sdl2
                #:verbose
                #:trivia
+               #:cl-dbi
+               #:sxql
                #:sb-concurrency))
 
 (asdf:defsystem #:mesha/tools

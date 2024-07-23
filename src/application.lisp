@@ -6,15 +6,8 @@
   ((document :initform nil)
    (client :initform nil)
    (messages :initform (sb-concurrency:make-mailbox :name "messages"))
-   (context :initarg :context)
    (commands :initform (sb-concurrency:make-mailbox :name "commands"))
-   (fonts :initform (make-hash-table))
    (exiting :initform nil)))
-
-(defparameter *rect-x* 1)
-(defparameter *rect-y* 1)
-(defparameter *move-x* 1)
-(defparameter *move-y* 1)
 
 (defun enqueue-command (command)
   (with-slots (commands) *application*
@@ -23,40 +16,42 @@
     (sb-concurrency:send-message commands command)))
 
 (defun process-commands (app)
-  (with-slots (commands) app
-    (let ((cmd (sb-concurrency:receive-message-no-hang commands)))
-      (when cmd
-        (v:debug :commands "Processing ~a" (first cmd))
-        (match (first cmd)
-          (:exit
-           (setf (slot-value *application* 'exiting) t))
-          (:make-table
-           (with-slots (document) app
-             (setf document (make-table 3 5 nil))))
-          (:draw-cells
-           (with-output-to-string (cmds)
-             (flet ((push-rect (x y w h content) (format cmds "mesha.cells.push({ rect: new PIXI.Rectangle(~a, ~a, ~a, ~a), content: \"~a\" });" x y w h content)))
-               (with-slots (client) app
-                 (let ((y-start 10)
-                       (x 10)
-                       (y 10))
-                   (format cmds "clear_cells();")
-                   (table-iterate (slot-value *application* 'document)
-                                  (lambda (col width)
-                                    (column-iterate col
-                                                    (lambda (width height content)
-                                                      (push-rect x y width height content)
-                                                      (incf y height)))
-                                    (incf x width)
-                                    (setf y y-start)))
-                   (format cmds "redraw_cells();")
-                   (clog:js-execute client (get-output-stream-string cmds)))))))
-          (:set-cell-text
-           (let ((c (gethash (second cmd) *cells*))
-                 (text (third cmd)))
-             (setf (slot-value c 'content) text
-                   (vx (slot-value c 'size)) (raylib:measure-text text 18)))
-           t))))))
+  (let ((cmd (sb-concurrency:receive-message-no-hang (slot-value app 'commands))))
+    (when cmd
+      (v:debug :commands "Processing ~a" (first cmd))
+      (match (first cmd)
+        (:exit
+         (setf (slot-value *application* 'exiting) t)
+         t)
+        (:make-table
+         (with-slots (document) app
+           (setf document (make-table 3 5 nil)))
+         t)
+        (:draw-cells
+         (with-output-to-string (cmds)
+           (flet ((push-rect (x y w h content)
+                    (format cmds "mesha.cells.push({ rect: new PIXI.Rectangle(~a, ~a, ~a, ~a), content: \"~a\" });" x y w h content)))
+             (with-slots (client) app
+               (let ((y-start 10)
+                     (x 10)
+                     (y 10))
+                 (format cmds "clear_cells();")
+                 (table-iterate (slot-value *application* 'document)
+                                (lambda (col width)
+                                  (column-iterate col
+                                                  (lambda (width height content)
+                                                    (push-rect x y width height content)
+                                                    (incf y height)))
+                                  (incf x width)
+                                  (setf y y-start)))
+                 (format cmds "redraw_cells();")
+                 (clog:js-execute client (get-output-stream-string cmds))))))
+         t)
+        (:set-cell-text
+         (let ((id (second cmd))
+               (text (third cmd)))
+           )
+         t)))))
 
 (defun on-new-window (body)
   (unless *application*

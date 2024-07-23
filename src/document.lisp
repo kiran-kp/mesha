@@ -3,6 +3,13 @@
 (defparameter *default-column-width* 50.0)
 (defparameter *default-row-height* 30.0)
 
+(defclass document ()
+  ((connection :initarg :connection)
+   (row-heights :initform (make-hash-table))
+   (column-widths :initform (make-hash-table))))
+
+(defparameter *doc* (make-instance 'document :connection (dbi:connect :sqlite3 :database-name "/home/kiran/notes.mesha")))
+
 (defclass cell ()
   ((content :initarg :content)))
 
@@ -15,6 +22,18 @@
   ((columns :initform nil :initarg :columns)
    (row-sizes :initform nil :initarg :row-sizes)
    (parent :initarg :parent)))
+
+(defparameter +create-notes-table-statement+
+  (sxql:create-table :notes
+      ((id :type 'integer :primary-key t :auto-increment t)
+       (mparent :type 'integer)
+       (mrow :type 'integer)
+       (mcolumn :type 'integer)
+       (mcontent :type 'blob)
+       (mcreated :type 'text)
+       (mupdated :type 'text))
+    (sxql:foreign-key '(:mparent) :references '(:notes :id))
+    (sxql:unique-key '(:mparent :mrow :mcolumn))))
 
 (defun make-column (num-rows tbl)
   (make-instance 'column
@@ -47,23 +66,3 @@
 (defun table-update (tbl msg)
   (v:info :cell "Received message: ~a" msg))
 
-(defun column-render (col start-x start-y row-sizes)
-  (with-slots (cells width) col
-    (loop for c in cells
-          for height in row-sizes
-          with x = start-x
-          collect (let ((rect (vec x start-y width height)))
-                    (incf x height)
-                    rect))))
-
-(defun table-render (tbl)
-  (declare (optimize (debug 3) (speed 0)))
-  (when tbl
-    (with-slots (columns row-sizes) tbl
-      (loop for c in columns
-            for i from 0
-            with rects = nil
-            with y = 0
-            do (setf rects (append rects (column-render c 0 y row-sizes)))
-               (incf x (slot-value c 'width))
-            finally (return rects)))))
