@@ -3,12 +3,18 @@ name = "mesha"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "mesha"
+crate-type = ["cdylib"]
+path = "src/lib.rs"
 
 [dependencies]
-eframe = "0.26"
-egui = "0.26"
+# eframe = "0.28"
+# egui = "0.28"
+# iced = "0.12.1"
 lru = "0.12"
-websocket = "0.24"
-serde = "1.0"
-serde_json = "1.0"
+rfd = "0.13"
+
+[dependencies.iced]
+version = "0.12"
+features = ["tokio", "debug", "highlighter"]

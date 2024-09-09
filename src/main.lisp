@@ -1,95 +1,66 @@
 (in-package #:mesha)
 
-(defclass client ()
-  ((connection :initarg :connection)))
+(defvar *font* nil)
 
-(defclass cell ()
-  ((parent :initarg :parent :initform 0)
-   (children :initarg :children :initform nil)
-   (content :initarg :content)))
+(defparameter *start-pos* (vec 200.0 50.0))
+(defparameter *row-size* 100.0)
 
-(defclass document ()
-  ((filepath :initarg :filepath)
-   (connection :initform nil)))
+(defun update ())
 
-(defvar *clients* (make-hash-table))
-(defvar *server* nil)
+(defun render ())
 
-(defvar *current-client* nil)
+#+nil
+(list
+ ;; Text label at origin
+ (widget
+  (text "Hello world!"))
 
-;; Root is 0. Rows are children of 0 by default
-(defparameter *cells* (alexandria:alist-hash-table (list (cons 1 (make-instance 'cell :content "Test"))
-                                                         (cons 2 (make-instance 'cell :content 123))
-                                                         (cons 3 (make-instance 'cell :children (list 4 5) :content "Parent"))
-                                                         (cons 4 (make-instance 'cell :parent 3 :content 1337))
-                                                         (cons 5 (make-instance 'cell :parent 3 :content "Kiran"))
-                                                         (cons 6 (make-instance 'cell :children (list 7 8 9 10 11) :content "List"))
-                                                         (cons 7 (make-instance 'cell :parent 6 :content 1))
-                                                         (cons 8 (make-instance 'cell :parent 6 :content 2))
-                                                         (cons 9 (make-instance 'cell :parent 6 :content 3))
-                                                         (cons 10 (make-instance 'cell :parent 6 :content 4)))))
+ ;; Text label at position
+ (screen
+  (at (vec 100 120)
+      (text "Hello world!")))
 
-(defun send-websocket-message (client msg)
-  (websocket-driver:send (slot-value client 'connection) msg))
+  ;; Styled text label
+ (widget
+  (text (bold "This " (italic "is ")) "some " (color :red "styled ") (underline "text.")))
 
-(defun handle-new-connection (connection)
-  (log:info "Client connected!")
-  (setf (gethash connection *clients*) (make-instance 'client :connection connection)
-        *current-client* (gethash connection *clients*)))
+ ;; Draw some lines
+ (screen
+  (color :gray
+         (thickness 10
+                    (lines (list (vec 0 10) (vec 1080 10)
+                                 (vec 0 20) (vec 1080 20)
+                                 (vec 0 30) (vec 1080 30))))))
 
-(defun handle-close-connection (connection)
-  (log:info "Client disconnected")
-  (let ((client (gethash connection *clients*)))
-    (remhash connection *clients*)
-    (when (equal client *current-client*)
-      (setf *current-client* nil))))
+ (widget
+  (button "Start Local Game" :on-click '(start-game :local))))
 
-(defun handle-client-message (connection msg-str)
-  (declare (optimize (debug 3) (speed 0)))
-  (log:info "Received message: ~a" msg-str)
-  (let ((msg (with-input-from-string (s msg-str) (read s)))
-        (client (gethash connection *clients*)))
-    (ccase (car msg)
-      (:get-block (send-block-update client (getf msg :id)))
-      (:set-viewport (log:info "Setting viewport")))))
+(cffi:define-foreign-library libmesha
+  (:unix "libmesha.so"))
 
-(defun setup-websocket (env)
-  (let ((ws (websocket-driver:make-server env)))
-    (websocket-driver:on :open ws
-                         (lambda () (handle-new-connection ws)))
-    (websocket-driver:on :message ws
-                         (lambda (msg) (handle-client-message ws msg)))
-    (websocket-driver:on :error ws
-                         (lambda (err) (log:error "~a" err)))
-    (websocket-driver:on :close ws
-                         (lambda (&key code reason)
-                           (declare (ignore code reason))
-                           (handle-close-connection ws)))
-    (lambda (responder)
-      (declare (ignore responder))
-      (websocket-driver:start-connection ws))))
+(cffi:use-foreign-library libmesha)
 
-(defun send-message (client msg)
-  (websocket-driver:send-text (slot-value client 'connection) msg))
+(cffi:defcfun "mesha_initialize_gui" :void)
 
-(defun send-block-update (client block-id)
-  (let* ((val (gethash block-id *blocks*))
-         (message (alexandria:plist-hash-table
-                   `(:operation "set-block"
-                     :id ,block-id
-                     :value ,(format nil "~a" val)))))
-    (send-message client (yason:with-output-to-string* () (yason:encode message)))))
+(defvar *should-quit* nil)
+(setf *should-quit* t)
+
+(defun main-loop ()
+  (update))
 
 (defun main ()
-  (log:info "Starting mesha server")
-  
-  (setf yason:*symbol-encoder* #'yason:encode-symbol-as-lowercase
-        yason:*symbol-key-encoder* #'yason:encode-symbol-as-lowercase)
+  (setf *should-quit* nil)
+  (v:info :application "Scribble starting up: ~a"
+          (trivial-main-thread:with-body-in-main-thread (:blocking t)
+            (+ 1 1)))
+  (let ((thread (bt:make-thread (lambda ()
+                                  (loop while (not *should-quit*)
+                                        do (main-loop))
+                                  (v:info :application "Exiting")))))
+    (trivial-main-thread:with-body-in-main-thread (:blocking nil)
+      (mesha-initialize-gui)
+      (v:info :application "Closed GUI")
+      (setf *should-quit* t))
 
-  (setf *server* (clack:clackup (lambda (env) (funcall 'setup-websocket env))
-                                          ;; :address "0.0.0.0"
-                                          :port 13330)))
-
-(defun shutdown ()
-  (clack:stop *server*)
-  (setf *current-client* nil))
+    (v:info :application "Waiting for gui to close")
+    (bt:join-thread thread)))

@@ -1,0 +1,5 @@
+(uiop:chdir "~/projects/mesha")
+(pushnew #P"~/projects/mesha/extern/" asdf:*central-registry*)
+(ql:quickload "cffi")
+(pushnew #P"~/projects/mesha/frontend/target/debug/" cffi:*foreign-library-directories*)
+(ql:quickload "mesha")
