@@ -70,7 +70,6 @@ impl Application for Mesha {
         let f = flags.unwrap();
         let m = Mesha {
             to_lisp: f.to_lisp,
-            from_lisp: f.from_lisp,
             last: Vec::new(),
             enabled: false
         };
@@ -111,17 +110,19 @@ impl Application for Mesha {
     }
 
     fn subscription(&self) -> iced::Subscription<Message> {
-        iced::Subscription::batch(
-            vec![iced::event::listen().map(Message::EventOccurred),
-                 iced::subscription::channel(
-                     std::any::TypeId::of::<Connect>(),
-                     100,
-                     |mut output| async move {
+        // iced::Subscription::batch(
+        //     vec![iced::event::listen().map(Message::EventOccurred),
+        //          iced::subscription::channel(
+        //              std::any::TypeId::of::<MeshaConnection>(),
+        //              100,
+        //              |mut output| async move {
                          
-                     }
-                 )
-            ]
-        )
+        //              }
+        //          )
+        //     ]
+        // )
+
+        iced::Subscription::none()
     }
 
     fn view(&self) -> iced::Element<Message> {

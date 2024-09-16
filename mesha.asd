@@ -14,14 +14,11 @@
   :entry-point "mesha:main"
   :components ((:file "package")
                (:file "main"))
-  :depends-on (#:cffi
-               #:log4cl
-               #:str
-               #:clack
-               #:websocket-driver
-               #:alexandria
-               #:mito
-               #:spinneret
-               #:parenscript
+  :depends-on (#:alexandria
+               #:serapeum
+               #:3d-vectors
+               #:cffi
+               #:verbose
                #:trivia
-               #:yason))
+               #:trivial-main-thread
+               #:sb-concurrency))
