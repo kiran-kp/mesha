@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.30)
 project(mesha)
 
 # Create an option to switch between a system sdl library and a vendored sdl library
@@ -26,6 +26,9 @@ add_executable(mesha src/main.cpp
                      extern/imgui/backends/imgui_impl_sdl2.cpp
                      # janet
                      extern/janet/build/c/janet.c)
+
+set_property(TARGET mesha PROPERTY CXX_STANDARD 17)
+
 
 # Dear ImGUI
 target_include_directories(mesha PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
