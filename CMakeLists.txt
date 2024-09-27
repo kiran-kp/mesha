@@ -16,16 +16,22 @@ else()
 endif()
 
 add_executable(mesha src/main.cpp
+                     src/ui.cpp
+                     # imgui
                      extern/imgui/imgui.cpp
                      extern/imgui/imgui_draw.cpp
                      extern/imgui/imgui_tables.cpp
                      extern/imgui/imgui_widgets.cpp
                      extern/imgui/backends/imgui_impl_sdlrenderer2.cpp
-                     extern/imgui/backends/imgui_impl_sdl2.cpp)
+                     extern/imgui/backends/imgui_impl_sdl2.cpp
+                     # janet
+                     extern/janet/build/c/janet.c)
 
 # Dear ImGUI
-target_include_directories(mesha PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/extern/imgui"
-                                         "${CMAKE_CURRENT_SOURCE_DIR}/extern/imgui/backends")
+target_include_directories(mesha PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
+                                         "${CMAKE_CURRENT_SOURCE_DIR}/extern/imgui"
+                                         "${CMAKE_CURRENT_SOURCE_DIR}/extern/imgui/backends"
+                                         "${CMAKE_CURRENT_SOURCE_DIR}/extern/janet/build/")
 
 # SDL2::SDL2main may or may not be available. It is e.g. required by Windows GUI applications
 if(TARGET SDL2::SDL2main)
