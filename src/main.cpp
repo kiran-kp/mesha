@@ -5,6 +5,7 @@
 
 #include <fstream>
 #include <string>
+#include <thread>
 
 auto slurp(std::string_view path) -> std::string {
     constexpr auto read_size = std::size_t(4096);
@@ -25,9 +26,30 @@ auto slurp(std::string_view path) -> std::string {
     return out;
 }
 
-auto main(int argc, char **argv) -> int {
+struct Vm {
+    JanetTable *env = nullptr;
+    JanetFiber *main;
+};
+
+auto mesha_init_scripts(Vm &vm, std::string_view exe_name) {
     janet_init();
-    JanetTable *env = janet_core_env(NULL);
+    vm.env = janet_core_env(NULL);
+
+    /* Save current executable path to (dyn :executable) */
+    janet_table_put(vm.env, janet_ckeywordv("executable"), janet_cstringv(exe_name.data()));
+
+    auto boot_file = slurp("../src/mesha.janet");
+    Janet output;
+    janet_dobytes(vm.env,
+                  reinterpret_cast<const uint8_t*>(boot_file.c_str()),
+                  static_cast<int32_t>(boot_file.length()),
+                  "../src/mesha.janet",
+                  &output);
+}
+
+auto mesha_run_main(Vm &vm, int argc, char **argv) {
+    JanetTable *env = vm.env;
+
     JanetArray *args;
 
     /* Create args tuple */
@@ -35,17 +57,6 @@ auto main(int argc, char **argv) -> int {
     for (int i = 1; i < argc; i++) {
         janet_array_push(args, janet_cstringv(argv[i]));
     }
-
-    /* Save current executable path to (dyn :executable) */
-    janet_table_put(env, janet_ckeywordv("executable"), janet_cstringv(argv[0]));
-
-    auto boot_file = slurp("../src/mesha.janet");
-    Janet output;
-    janet_dobytes(env,
-                  reinterpret_cast<const uint8_t*>(boot_file.c_str()),
-                  static_cast<int32_t>(boot_file.length()),
-                  "../src/mesha.janet",
-                  &output);
 
     /* Run startup script */
     Janet mainfun;
@@ -57,7 +68,19 @@ auto main(int argc, char **argv) -> int {
 
     /* Run the fiber in an event loop */
     auto status = janet_loop_fiber(fiber);
+}
 
+auto script_thread_fn(int argc, char **argv) {
+    Vm vm;
+    mesha_init_scripts(vm, argv[0]);
+
+    mesha_run_main(vm, argc, argv);
+
+    janet_deinit();
+}
+
+auto main(int argc, char **argv) -> int {
+    std::thread script_thread(script_thread_fn, argc, argv);
     Ui ui;
     if (mesha_ui_init(ui)) {
         bool show_demo_window = true;
@@ -101,7 +124,6 @@ auto main(int argc, char **argv) -> int {
         mesha_ui_shutdown(ui);
     }
 
-    janet_deinit();
-
+    script_thread.join();
     return 0;
 }
