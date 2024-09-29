@@ -7,3 +7,6 @@
 [submodule "extern/janet"]
 	path = extern/janet
 	url = https://github.com/janet-lang/janet
+[submodule "extern/readerwriterqueue"]
+	path = extern/readerwriterqueue
+	url = https://github.com/cameron314/readerwriterqueue.git

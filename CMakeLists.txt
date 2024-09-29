@@ -34,7 +34,8 @@ set_property(TARGET mesha PROPERTY CXX_STANDARD 17)
 target_include_directories(mesha PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
                                          "${CMAKE_CURRENT_SOURCE_DIR}/extern/imgui"
                                          "${CMAKE_CURRENT_SOURCE_DIR}/extern/imgui/backends"
-                                         "${CMAKE_CURRENT_SOURCE_DIR}/extern/janet/build/")
+                                         "${CMAKE_CURRENT_SOURCE_DIR}/extern/janet/build/"
+                                         "${CMAKE_CURRENT_SOURCE_DIR}/extern/readerwriterqueue")
 
 # SDL2::SDL2main may or may not be available. It is e.g. required by Windows GUI applications
 if(TARGET SDL2::SDL2main)
