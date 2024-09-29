@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 #include <janet.h>
+#include <readerwriterqueue.h>
 
 #include <fstream>
 #include <string>
@@ -26,9 +27,27 @@ auto slurp(std::string_view path) -> std::string {
     return out;
 }
 
+struct Command {
+    enum Type {
+        InitUi
+    };
+    
+    union {
+    };
+
+    Type type;
+};
+
+struct Message {
+    union {
+    };
+};
+
 struct Vm {
     JanetTable *env = nullptr;
     JanetFiber *main;
+    ReaderWriterQueue<Command> *command_queue;
+    ReaderWriterQueue<Message> *message_queue;
 };
 
 auto mesha_init_scripts(Vm &vm, std::string_view exe_name) {
