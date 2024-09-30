@@ -16,7 +16,7 @@ auto slurp(std::string_view path) -> std::string {
     if (!stream) {
         throw std::ios_base::failure("File does not exist");
     }
-    
+
     auto out = std::string();
     auto buf = std::string(read_size, '\0');
     while (stream.read(& buf[0], read_size)) {
@@ -31,7 +31,7 @@ struct Command {
     enum Type {
         InitUi
     };
-    
+
     union {
     };
 
@@ -39,24 +39,51 @@ struct Command {
 };
 
 struct Message {
+    enum Type {
+        UiReady
+    };
+
     union {
     };
 };
 
+using CommandQueue = moodycamel::ReaderWriterQueue<Command>;
+using MessageQueue = moodycamel::ReaderWriterQueue<Message>;
+
 struct Vm {
     JanetTable *env = nullptr;
-    JanetFiber *main;
-    ReaderWriterQueue<Command> *command_queue;
-    ReaderWriterQueue<Message> *message_queue;
+    JanetArray *args = nullptr;
+    JanetFiber *main = nullptr;
 };
 
-auto mesha_init_scripts(Vm &vm, std::string_view exe_name) {
+thread_local CommandQueue *command_queue;
+thread_local MessageQueue *message_queue;
+
+struct VmInitArgs {
+    int argc;
+    char **argv;
+    CommandQueue *command_queue;
+    MessageQueue *message_queue;
+};
+
+auto mesha_vm_init(Vm &vm, const VmInitArgs &args) {
+    command_queue = args.command_queue;
+    message_queue = args.message_queue;
+
     janet_init();
+
     vm.env = janet_core_env(NULL);
 
-    /* Save current executable path to (dyn :executable) */
-    janet_table_put(vm.env, janet_ckeywordv("executable"), janet_cstringv(exe_name.data()));
+    // Save current executable path to (dyn :executable)
+    janet_table_put(vm.env, janet_ckeywordv("executable"), janet_cstringv(args.argv[0]));
+    // Create args tuple
+    vm.args = janet_array(args.argc);
+    for (int i = 1; i < args.argc; i++) {
+        janet_array_push(vm.args, janet_cstringv(args.argv[i]));
+    }
 
+
+    // Load boot script
     auto boot_file = slurp("../src/mesha.janet");
     Janet output;
     janet_dobytes(vm.env,
@@ -66,41 +93,46 @@ auto mesha_init_scripts(Vm &vm, std::string_view exe_name) {
                   &output);
 }
 
-auto mesha_run_main(Vm &vm, int argc, char **argv) {
+auto mesha_vm_shutdown(Vm &vm) {
+    janet_deinit();
+}
+
+auto mesha_vm_run_main(Vm &vm) {
     JanetTable *env = vm.env;
 
-    JanetArray *args;
-
-    /* Create args tuple */
-    args = janet_array(argc);
-    for (int i = 1; i < argc; i++) {
-        janet_array_push(args, janet_cstringv(argv[i]));
-    }
-
-    /* Run startup script */
+    // Run startup script
     Janet mainfun;
     janet_resolve(env, janet_csymbol("main"), &mainfun);
-    Janet mainargs[1] = { janet_wrap_array(args) };
+    Janet mainargs[1] = { janet_wrap_array(vm.args) };
     JanetFiber *fiber = janet_fiber(janet_unwrap_function(mainfun), 64, 1, mainargs);
     janet_gcroot(janet_wrap_fiber(fiber));
     fiber->env = env;
 
-    /* Run the fiber in an event loop */
+    // Run the fiber in an event loop
     auto status = janet_loop_fiber(fiber);
 }
 
-auto script_thread_fn(int argc, char **argv) {
+auto script_thread_fn(const VmInitArgs &args) {
     Vm vm;
-    mesha_init_scripts(vm, argv[0]);
-
-    mesha_run_main(vm, argc, argv);
-
-    janet_deinit();
+    mesha_vm_init(vm, args);
+    mesha_vm_run_main(vm);
+    mesha_vm_shutdown(vm);
 }
 
 auto main(int argc, char **argv) -> int {
-    std::thread script_thread(script_thread_fn, argc, argv);
+    CommandQueue command_queue;
+    MessageQueue message_queue;
+
+    VmInitArgs args;
+    args.argc = argc;
+    args.argv = argv;
+    args.command_queue = &command_queue;
+    args.message_queue = &message_queue;
+
+    std::thread script_thread(script_thread_fn, args);
+
     Ui ui;
+
     if (mesha_ui_init(ui)) {
         bool show_demo_window = true;
         bool show_another_window = false;
