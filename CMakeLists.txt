@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.30)
+cmake_minimum_required(VERSION 3.28)
 project(mesha)
 
 # Create an option to switch between a system sdl library and a vendored sdl library
