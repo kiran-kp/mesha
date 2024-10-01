@@ -26,7 +26,7 @@ bool mesha_ui_init(Ui &ui) {
     ui.should_quit = false;
 
     // Create window with SDL_Renderer graphics context
-    SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+    SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS);
     ui.impl->window = SDL_CreateWindow("Mesha", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
     if (ui.impl->window == nullptr) {
         printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());

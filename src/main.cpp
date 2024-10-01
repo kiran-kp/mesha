@@ -136,8 +136,11 @@ auto main(int argc, char **argv) -> int {
     if (mesha_ui_init(ui)) {
         bool show_demo_window = true;
         bool show_another_window = false;
+        bool is_window_open = true;
         while (mesha_ui_begin_frame(ui) && !ui.should_quit) {
-            if (ImGui::Begin("Hello, world!")) {
+            ImGui::SetNextWindowSize(ImVec2(1280, 720));
+            ImGui::SetNextWindowPos(ImVec2(0, 0));
+            if (ImGui::Begin("Mesha", &is_window_open, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoMove)) {
                 static float f = 0.0f;
                 static int counter = 0;
 
@@ -157,6 +160,10 @@ auto main(int argc, char **argv) -> int {
             }
 
             ImGui::End();
+
+            if (!is_window_open) {
+                break;
+            }
 
             if (show_another_window) {
                 if (ImGui::Begin("Another Window", &show_another_window)) {
