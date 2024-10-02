@@ -140,7 +140,7 @@ auto main(int argc, char **argv) -> int {
         while (mesha_ui_begin_frame(ui) && !ui.should_quit) {
             ImGui::SetNextWindowSize(ImVec2(1280, 720));
             ImGui::SetNextWindowPos(ImVec2(0, 0));
-            if (ImGui::Begin("Mesha", &is_window_open, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoMove)) {
+            if (ImGui::Begin("Mesha", &is_window_open, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoMove)) {
                 static float f = 0.0f;
                 static int counter = 0;
 
