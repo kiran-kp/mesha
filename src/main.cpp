@@ -5,14 +5,14 @@
 
 #include <thread>
 
-auto script_thread_fn(const VmInitArgs &args) {
+auto script_thread_fn(const VmInitArgs &args) -> void {
     Vm vm;
     mesha_vm_init(vm, args);
     mesha_vm_run_main(vm);
     mesha_vm_shutdown(vm);
 }
 
-auto show_main_menu_bar() {
+auto show_main_menu_bar() -> void {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("Exit", "Alt+F4")) { /* Do something */ }
