@@ -29,35 +29,56 @@ auto slurp(std::string_view path) -> std::string {
 
 struct Command {
     enum Type {
-        InitUi
-    };
+        Invalid,
+        InitUi,
+        Quit
+    } type;
 
     union {
+        struct {
+            bool had_error = false;
+        } quit;
     };
 
-    Type type;
+    Command() : type(Invalid) {
+    }
+
+    static auto init_ui_cmd() -> Command {
+        Command cmd;
+        cmd.type = InitUi;
+        return cmd;
+    }
+
+    static auto quit_cmd(bool had_error) -> Command {
+        Command cmd;
+        cmd.type = Quit;
+        cmd.quit.had_error = had_error;
+        return cmd;
+    }
 };
 
 struct Message {
     enum Type {
+        Invalid,
         UiReady
-    };
+    } type;
 
     union {
     };
 };
 
-using CommandQueue = moodycamel::ReaderWriterQueue<Command>;
-using MessageQueue = moodycamel::ReaderWriterQueue<Message>;
+using CommandQueue = moodycamel::BlockingReaderWriterQueue<Command>;
+using MessageQueue = moodycamel::BlockingReaderWriterQueue<Message>;
 
 struct Vm {
     JanetTable *env = nullptr;
     JanetArray *args = nullptr;
     JanetFiber *main = nullptr;
+    CommandQueue *command_queue = nullptr;
+    MessageQueue *message_queue = nullptr;
 };
 
-thread_local CommandQueue *command_queue;
-thread_local MessageQueue *message_queue;
+thread_local Vm *the_vm;
 
 struct VmInitArgs {
     int argc;
@@ -66,9 +87,16 @@ struct VmInitArgs {
     MessageQueue *message_queue;
 };
 
+static Janet enqueue_command(int32_t argc, Janet *argv) {
+    janet_fixarity(argc, 1);
+    JanetKeyword command = janet_getkeyword(argv, 0);
+    the_vm->command_queue->enqueue(Command::init_ui_cmd());
+    return janet_wrap_nil();
+}
+
 auto mesha_vm_init(Vm &vm, const VmInitArgs &args) {
-    command_queue = args.command_queue;
-    message_queue = args.message_queue;
+    vm.command_queue = args.command_queue;
+    vm.message_queue = args.message_queue;
 
     janet_init();
 
@@ -76,12 +104,21 @@ auto mesha_vm_init(Vm &vm, const VmInitArgs &args) {
 
     // Save current executable path to (dyn :executable)
     janet_table_put(vm.env, janet_ckeywordv("executable"), janet_cstringv(args.argv[0]));
+
     // Create args tuple
     vm.args = janet_array(args.argc);
     for (int i = 1; i < args.argc; i++) {
         janet_array_push(vm.args, janet_cstringv(args.argv[i]));
     }
 
+    JanetReg cfuns[] = {
+        {"enqueue-command",
+         enqueue_command,
+         "(enqueue-command cmd)\n\nEnqueues the command."},
+        {NULL, NULL, NULL}
+    };
+
+    janet_cfuns(vm.env, "native", cfuns);
 
     // Load boot script
     auto boot_file = slurp("../src/mesha.janet");
@@ -91,6 +128,8 @@ auto mesha_vm_init(Vm &vm, const VmInitArgs &args) {
                   static_cast<int32_t>(boot_file.length()),
                   "../src/mesha.janet",
                   &output);
+
+    the_vm = &vm;
 }
 
 auto mesha_vm_shutdown(Vm &vm) {
@@ -119,6 +158,22 @@ auto script_thread_fn(const VmInitArgs &args) {
     mesha_vm_shutdown(vm);
 }
 
+auto show_main_menu_bar() {
+    if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("File")) {
+            if (ImGui::MenuItem("Exit", "Alt+F4")) { /* Do something */ }
+            ImGui::EndMenu();
+        }
+        
+        if (ImGui::BeginMenu("Help")) {
+            if (ImGui::MenuItem("About")) { /* Do something */ }
+            ImGui::EndMenu();
+        }
+        
+        ImGui::EndMainMenuBar();
+    }
+}
+
 auto main(int argc, char **argv) -> int {
     CommandQueue command_queue;
     MessageQueue message_queue;
@@ -132,17 +187,43 @@ auto main(int argc, char **argv) -> int {
     std::thread script_thread(script_thread_fn, args);
 
     Ui ui;
+    bool show_demo_window = true;
+    bool show_another_window = false;
+    bool is_window_open = true;
+    bool should_quit = false;
 
-    if (mesha_ui_init(ui)) {
-        bool show_demo_window = true;
-        bool show_another_window = false;
-        bool is_window_open = true;
-        while (mesha_ui_begin_frame(ui) && !ui.should_quit) {
+    while (!should_quit && !ui.should_quit) {
+        // Process commands
+        Command cmd;
+        if (command_queue.wait_dequeue_timed(cmd, 
+                                             std::chrono::milliseconds(10))) {
+            switch (cmd.type) {
+                case Command::InitUi:
+                    mesha_ui_init(ui);
+                    break;
+                case Command::Quit:
+                    should_quit = true;
+                    break;
+                case Command::Invalid:
+                    break;
+            }
+        }
+
+        // Update UI
+        if (ui.is_initialized) {
+            mesha_ui_begin_frame(ui);
             ImGui::SetNextWindowSize(ImVec2(1280, 720));
             ImGui::SetNextWindowPos(ImVec2(0, 0));
-            if (ImGui::Begin("Mesha", &is_window_open, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoMove)) {
+            auto flags = ImGuiWindowFlags_NoResize |
+                         ImGuiWindowFlags_NoTitleBar |
+                         ImGuiWindowFlags_MenuBar |
+                         ImGuiWindowFlags_NoMove |
+                         ImGuiWindowFlags_NoBringToFrontOnFocus;
+            if (ImGui::Begin("Mesha", &is_window_open, flags)) {
                 static float f = 0.0f;
                 static int counter = 0;
+
+                show_main_menu_bar();
 
                 ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
                 ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
@@ -178,8 +259,6 @@ auto main(int argc, char **argv) -> int {
 
             mesha_ui_end_frame(ui);
         }
-
-        mesha_ui_shutdown(ui);
     }
 
     script_thread.join();

@@ -12,6 +12,7 @@ enum class WindowState {
 struct Ui {
     std::unique_ptr<Ui_impl> impl;
     bool should_quit;
+    bool is_initialized;
     Ui();
     ~Ui();
 };

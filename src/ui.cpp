@@ -51,6 +51,8 @@ bool mesha_ui_init(Ui &ui) {
     ImGui_ImplSDL2_InitForSDLRenderer(ui.impl->window, ui.impl->renderer);
     ImGui_ImplSDLRenderer2_Init(ui.impl->renderer);
 
+    ui.is_initialized = true;
+
     return true;
 }
 

@@ -11,9 +11,10 @@
 
 (defn main
   [args]
-  
+  "Entry point for Mesha"
   (setdyn *args* args)
-  (printf "Hello world from scripts! %v" (fiber/status f))
+  (printf "Starting UI. %v" (fiber/status f))
+  (enqueue-command :init-ui)
   (resume f)
   (printf "This is the next run: %v" (fiber/status f))
   (resume f)
