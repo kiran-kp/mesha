@@ -89,14 +89,17 @@ struct VmInitArgs {
 
 static Janet enqueue_command(int32_t argc, Janet *argv) {
     janet_arity(argc, 1, 6);
+    bool handled = false;
     JanetKeyword command = janet_getkeyword(argv, 0);
     if (command == janet_ckeyword("init-ui")) {
         the_vm->command_queue->enqueue(Command::init_ui_cmd());
+        handled = true;
     } else if (command == janet_ckeyword("quit")) {
         the_vm->command_queue->enqueue(Command::quit_cmd(false));
+        handled = true;
     }
 
-    return janet_wrap_nil();
+    return handled ? janet_wrap_true() : janet_wrap_false();
 }
 
 auto mesha_vm_init(Vm &vm, const VmInitArgs &args) {
@@ -119,7 +122,7 @@ auto mesha_vm_init(Vm &vm, const VmInitArgs &args) {
     JanetReg cfuns[] = {
         {"enqueue-command",
          enqueue_command,
-         "(enqueue-command cmd)\n\nEnqueues the command."},
+         "(enqueue-command cmd)\n\nEnqueues a command and returns true if it was successfully enqueued."},
         {NULL, NULL, NULL}
     };
 
