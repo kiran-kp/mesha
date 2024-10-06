@@ -1,4 +1,4 @@
-#include <janet.h>
+#include <memory> 
 #include <readerwriterqueue.h>
 
 struct Command {
@@ -44,12 +44,12 @@ struct Message {
 using CommandQueue = moodycamel::BlockingReaderWriterQueue<Command>;
 using MessageQueue = moodycamel::BlockingReaderWriterQueue<Message>;
 
+struct VmImpl;
+
 struct Vm {
-    JanetTable *env = nullptr;
-    JanetArray *args = nullptr;
-    JanetFiber *main = nullptr;
-    CommandQueue *command_queue = nullptr;
-    MessageQueue *message_queue = nullptr;
+    std::unique_ptr<VmImpl> impl;
+    Vm();
+    ~Vm();
 };
 
 struct VmInitArgs {

@@ -1,7 +1,19 @@
 #include <vm.h>
 
+#include <janet.h>
+
 #include <fstream>
 #include <string>
+
+struct VmImpl {
+    JanetTable *env;
+    JanetArray *args;
+    CommandQueue *command_queue;
+    MessageQueue *message_queue;
+};
+
+Vm::Vm() = default;
+Vm::~Vm() = default;
 
 thread_local Vm *the_vm;
 
@@ -27,12 +39,13 @@ static auto slurp(std::string_view path) -> std::string {
 static Janet enqueue_command(int32_t argc, Janet *argv) {
     janet_arity(argc, 1, 6);
     bool handled = false;
+    auto impl = the_vm->impl.get();
     JanetKeyword command = janet_getkeyword(argv, 0);
     if (command == janet_ckeyword("init-ui")) {
-        the_vm->command_queue->enqueue(Command::init_ui_cmd());
+        impl->command_queue->enqueue(Command::init_ui_cmd());
         handled = true;
     } else if (command == janet_ckeyword("quit")) {
-        the_vm->command_queue->enqueue(Command::quit_cmd(false));
+        impl->command_queue->enqueue(Command::quit_cmd(false));
         handled = true;
     }
 
@@ -40,20 +53,22 @@ static Janet enqueue_command(int32_t argc, Janet *argv) {
 }
 
 auto mesha_vm_init(Vm &vm, const VmInitArgs &args) -> void {
-    vm.command_queue = args.command_queue;
-    vm.message_queue = args.message_queue;
+    vm.impl = std::make_unique<VmImpl>();
+    auto impl = vm.impl.get();
+    impl->command_queue = args.command_queue;
+    impl->message_queue = args.message_queue;
 
     janet_init();
 
-    vm.env = janet_core_env(NULL);
+    impl->env = janet_core_env(NULL);
 
     // Save current executable path to (dyn :executable)
-    janet_table_put(vm.env, janet_ckeywordv("executable"), janet_cstringv(args.argv[0]));
+    janet_table_put(impl->env, janet_ckeywordv("executable"), janet_cstringv(args.argv[0]));
 
     // Create args tuple
-    vm.args = janet_array(args.argc);
+    impl->args = janet_array(args.argc);
     for (int i = 1; i < args.argc; i++) {
-        janet_array_push(vm.args, janet_cstringv(args.argv[i]));
+        janet_array_push(impl->args, janet_cstringv(args.argv[i]));
     }
 
     JanetReg cfuns[] = {
@@ -63,12 +78,12 @@ auto mesha_vm_init(Vm &vm, const VmInitArgs &args) -> void {
         {NULL, NULL, NULL}
     };
 
-    janet_cfuns(vm.env, "native", cfuns);
+    janet_cfuns(impl->env, "native", cfuns);
 
     // Load boot script
     auto boot_file = slurp("../src/mesha.janet");
     Janet output;
-    janet_dobytes(vm.env,
+    janet_dobytes(impl->env,
                   reinterpret_cast<const uint8_t*>(boot_file.c_str()),
                   static_cast<int32_t>(boot_file.length()),
                   "../src/mesha.janet",
@@ -82,12 +97,13 @@ auto mesha_vm_shutdown(Vm &vm) -> void {
 }
 
 auto mesha_vm_run_main(Vm &vm) -> void {
-    JanetTable *env = vm.env;
+    auto impl = vm.impl.get();
+    JanetTable *env = impl->env;
 
     // Run startup script
     Janet mainfun;
     janet_resolve(env, janet_csymbol("main"), &mainfun);
-    Janet mainargs[1] = { janet_wrap_array(vm.args) };
+    Janet mainargs[1] = { janet_wrap_array(impl->args) };
     JanetFiber *fiber = janet_fiber(janet_unwrap_function(mainfun), 64, 1, mainargs);
     janet_gcroot(janet_wrap_fiber(fiber));
     fiber->env = env;
