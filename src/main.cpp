@@ -88,9 +88,14 @@ struct VmInitArgs {
 };
 
 static Janet enqueue_command(int32_t argc, Janet *argv) {
-    janet_fixarity(argc, 1);
+    janet_arity(argc, 1, 6);
     JanetKeyword command = janet_getkeyword(argv, 0);
-    the_vm->command_queue->enqueue(Command::init_ui_cmd());
+    if (command == janet_ckeyword("init-ui")) {
+        the_vm->command_queue->enqueue(Command::init_ui_cmd());
+    } else if (command == janet_ckeyword("quit")) {
+        the_vm->command_queue->enqueue(Command::quit_cmd(false));
+    }
+
     return janet_wrap_nil();
 }
 
