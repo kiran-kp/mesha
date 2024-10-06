@@ -17,6 +17,7 @@ endif()
 
 add_executable(mesha src/main.cpp
                      src/ui.cpp
+                     src/vm.cpp
                      # imgui
                      extern/imgui/imgui.cpp
                      extern/imgui/imgui_draw.cpp
