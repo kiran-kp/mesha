@@ -36,7 +36,7 @@ static auto slurp(std::string_view path) -> std::string {
     return out;
 }
 
-static Janet enqueue_command(int32_t argc, Janet *argv) {
+static auto enqueue_command(int32_t argc, Janet *argv) -> Janet {
     janet_arity(argc, 1, 6);
     bool handled = false;
     auto impl = the_vm->impl.get();
