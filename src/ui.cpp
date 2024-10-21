@@ -1,8 +1,11 @@
 #include <ui.h>
 
-#include <SDL.h>
 #include <imgui_impl_sdl2.h>
 #include <imgui_impl_sdlrenderer2.h>
+#include <SDL.h>
+
+#include <cstdio>
+#include <utility>
 
 struct Ui_impl {
     SDL_Window *window;
@@ -109,4 +112,10 @@ void mesha_ui_end_frame(Ui &ui) {
     SDL_RenderClear(renderer);
     ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
     SDL_RenderPresent(renderer);
+}
+
+std::pair<int, int> mesha_ui_get_window_size(Ui &ui) {
+    int width, height;
+    SDL_GetWindowSize(ui.impl->window, &width, &height);
+    return {width, height};
 }

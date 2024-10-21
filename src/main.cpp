@@ -66,7 +66,8 @@ auto main(int argc, char **argv) -> int {
         // Update UI
         if (ui.is_initialized) {
             mesha_ui_begin_frame(ui);
-            ImGui::SetNextWindowSize(ImVec2(1280, 720));
+            auto [width, height] = mesha_ui_get_window_size(ui);
+            ImGui::SetNextWindowSize(ImVec2(width, height));
             ImGui::SetNextWindowPos(ImVec2(0, 0));
             auto flags = ImGuiWindowFlags_NoResize |
                          ImGuiWindowFlags_NoTitleBar |

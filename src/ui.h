@@ -22,3 +22,5 @@ void mesha_ui_shutdown(Ui &ui);
 
 bool mesha_ui_begin_frame(Ui &ui);
 void mesha_ui_end_frame(Ui &ui);
+
+std::pair<int, int> mesha_ui_get_window_size(Ui &ui);
