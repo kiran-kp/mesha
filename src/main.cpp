@@ -41,9 +41,6 @@ auto main(int argc, char **argv) -> int {
     std::thread script_thread(script_thread_fn, args);
 
     Ui ui;
-    bool show_demo_window = true;
-    bool show_another_window = false;
-    bool is_window_open = true;
     bool should_quit = false;
 
     while (!should_quit && !ui.should_quit) {
@@ -54,6 +51,9 @@ auto main(int argc, char **argv) -> int {
             switch (cmd.type) {
                 case Command::InitUi:
                     mesha_ui_init(ui);
+                    break;
+                case Command::CreateView:
+                    mesha_ui_create_view(ui, cmd.create_view.bytecode);
                     break;
                 case Command::Quit:
                     should_quit = true;
@@ -67,6 +67,7 @@ auto main(int argc, char **argv) -> int {
         if (ui.is_initialized) {
             mesha_ui_begin_frame(ui);
             auto [width, height] = mesha_ui_get_window_size(ui);
+            /*
             ImGui::SetNextWindowSize(ImVec2(width, height));
             ImGui::SetNextWindowPos(ImVec2(0, 0));
             auto flags = ImGuiWindowFlags_NoResize |
@@ -74,43 +75,13 @@ auto main(int argc, char **argv) -> int {
                          ImGuiWindowFlags_MenuBar |
                          ImGuiWindowFlags_NoMove |
                          ImGuiWindowFlags_NoBringToFrontOnFocus;
-            if (ImGui::Begin("Mesha", &is_window_open, flags)) {
-                static float f = 0.0f;
-                static int counter = 0;
-
+            if (ImGui::Begin("Mesha", nullptr, flags)) {
                 show_main_menu_bar();
-
-                ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-                ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-                ImGui::Checkbox("Another Window", &show_another_window);
-
-                ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-
-                if (ImGui::Button("Button")) {
-                    counter++;
-                }
-
-                ImGui::SameLine();
-                ImGui::Text("counter = %d", counter);
-
             }
 
             ImGui::End();
-
-            if (!is_window_open) {
-                break;
-            }
-
-            if (show_another_window) {
-                if (ImGui::Begin("Another Window", &show_another_window)) {
-                    ImGui::Text("Hello from another window!");
-                    if (ImGui::Button("Close Me")) {
-                        show_another_window = false;
-                    }
-                }
-
-                ImGui::End();
-            }
+            */
+            mesha_ui_process_views(ui);
 
             mesha_ui_end_frame(ui);
         }

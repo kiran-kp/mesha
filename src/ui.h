@@ -23,4 +23,7 @@ auto mesha_ui_shutdown(Ui &ui) -> void;
 auto mesha_ui_begin_frame(Ui &ui) -> bool;
 auto mesha_ui_end_frame(Ui &ui) -> void;
 
-auto mesha_ui_get_window_size(Ui &ui) -> std::pair<int, int>; 
+auto mesha_ui_get_window_size(Ui &ui) -> std::pair<int, int>;
+
+auto mesha_ui_process_views(Ui &ui) -> void;
+auto mesha_ui_create_view(Ui &ui, uint8_t *bytes) -> void;

@@ -44,6 +44,12 @@ static auto enqueue_command(int32_t argc, Janet *argv) -> Janet {
     if (command == janet_ckeyword("init-ui")) {
         impl->command_queue->enqueue(Command::init_ui_cmd());
         handled = true;
+    } else if (command == janet_ckeyword("create-view")) {
+        JanetBuffer *buffer = janet_getbuffer(argv, 1);
+        auto bytes = new uint8_t[buffer->count];
+        memcpy(bytes, buffer->data, buffer->count);
+        impl->command_queue->enqueue(Command::create_view_cmd(bytes));
+        handled = true;
     } else if (command == janet_ckeyword("quit")) {
         impl->command_queue->enqueue(Command::quit_cmd(false));
         handled = true;

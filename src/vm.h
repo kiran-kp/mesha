@@ -1,14 +1,21 @@
-#include <memory> 
 #include <readerwriterqueue.h>
+
+#include <memory>
+#include <vector>
 
 struct Command {
     enum Type {
         Invalid,
         InitUi,
+        CreateView,
         Quit
     } type;
 
     union {
+        struct {
+            uint8_t *bytecode;
+        } create_view;
+
         struct {
             bool had_error = false;
         } quit;
@@ -20,6 +27,13 @@ struct Command {
     static auto init_ui_cmd() -> Command {
         Command cmd;
         cmd.type = InitUi;
+        return cmd;
+    }
+
+    static auto create_view_cmd(uint8_t *bytes) -> Command {
+        Command cmd;
+        cmd.type = CreateView;
+        cmd.create_view.bytecode = bytes;
         return cmd;
     }
 

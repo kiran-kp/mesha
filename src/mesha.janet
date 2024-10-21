@@ -37,33 +37,40 @@
 (defn encode-window-properties
   [props]
   (def window-properties
-    {:is-open 0
-     :flags 1
-     :width 2
-     :height 3
-     :x 4
-     :y 5})
-  (let [output @""
-        flags (map encode-window-flag (get props :flags))]
+    {:is-open "\x00"
+     :flags "\x01"
+     :width "\x02"
+     :height "\x03"
+     :x "\x04"
+     :y "\x05"})
+  (let [output @""]
     (loop [[key value] :pairs props]
-      (buffer/push output (get window-properties key))
-      (match key
-        :is-open (buffer/push output (if value 1 0))
-        :flags (buffer/push-word output (reduce2 bor flags))
-        :width (buffer/push-word output value)
-        :height (buffer/push-word output value)
-        :x (buffer/push-word output value)
-        :y (buffer/push-word output value)))
+      (defn push
+        [k v]
+        (printf "key: %v %j value: %j %j" key k value v)
+        (buffer/push output k)
+        (if (bytes? v)
+          (buffer/push output v)
+          (buffer/push-uint32 output :le v)))
+      (let [k (get window-properties key)]
+        (match key
+          :is-open (push k (if value 1 0))
+          :flags (push k (reduce2 bor (map encode-window-flag value)))
+          :width (push k value)
+          :height (push k value)
+          :x (push k value)
+          :y (push k value))))
         output))
 
 (def opcode
-  {:window 0
-   :text 1
-   :checkbox 2
-   :slider-float 3
-   :button 4
-   :same-line 5
-   :formatted-text 6})
+  {:window "\x00"
+   :text "\x01"
+   :checkbox "\x02"
+   :slider-float "\x03"
+   :button "\x04"
+   :same-line "\x05"
+   :formatted-text "\x06"
+   :done "\xFF"})
 
 (def messages
   @{})
@@ -79,14 +86,14 @@
           (buffer/push-word output (length props))
           (buffer/push output (encode-window-properties props))
           (buffer/push-word output (length title))
-          (buffer/push output title)
+          (buffer/push output title "\0")
           (each child children
             (encode-element child)))
         [:text text & args]
         (do
           (buffer/push output (get opcode :text))
           (buffer/push-word output (length text))
-          (buffer/push output text)
+          (buffer/push output text "\0")
           (buffer/push-word output (if args (length args) 0))
           (each arg args
             (if (string? arg)
@@ -118,6 +125,7 @@
         [:same-line]
         (buffer/push output (get opcode :same-line))))
     (encode-element view)
+    (buffer/push output (get opcode :done))
     output))
 
 (def main-window
@@ -134,8 +142,8 @@
         [:f-slider] (put self :f (get msg 2))))
     :view
     (fn [self]
-      [:window {:width 1280
-                :height 720
+      [:window {:width 640
+                :height 480
                 :x 0
                 :y 0
                 :flags [:no-resize
@@ -156,8 +164,9 @@
   [args]
   "Entry point for Mesha"
   (setdyn *args* args)
-  (printf "Starting UI. %v" (fiber/status f))
+  (printf "Starting UI. %v %j" (fiber/status f) (encode-view (:view main-window)))
   (enqueue-command :init-ui)
+  (enqueue-command :create-view (encode-view (:view main-window)))
   (resume f)
   (printf "This is the next run: %v" (fiber/status f))
   (resume f)

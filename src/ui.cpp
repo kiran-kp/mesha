@@ -5,11 +5,14 @@
 #include <SDL.h>
 
 #include <cstdio>
+#include <string_view>
 #include <utility>
+#include <vector>
 
 struct Ui_impl {
     SDL_Window *window;
     SDL_Renderer *renderer;
+    std::vector<uint8_t*> views;
 };
 
 Ui::Ui() = default;
@@ -118,4 +121,108 @@ auto mesha_ui_get_window_size(Ui &ui) -> std::pair<int, int> {
     int width, height;
     SDL_GetWindowSize(ui.impl->window, &width, &height);
     return {width, height};
+}
+
+static auto read_int32(uint8_t *bytes) -> int32_t {
+    return bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[3] << 24);
+}
+
+auto mesha_ui_process_window(uint8_t *bytes) -> uint8_t* {
+    int32_t num_properties = read_int32(bytes);
+    uint8_t *op = bytes + 4;
+    int32_t width = 100;
+    int32_t height = 100;
+    // Process properties
+    for (uint8_t i = 0; i < num_properties; i++) {
+        switch (*op) {
+            case 0x00: // is-open
+            {
+                op += 1;
+                int32_t is_open = read_int32(op);
+                op += 4;
+                break;
+            }
+            case 0x01: // flags
+            {
+                op += 1;
+                int32_t flags = read_int32(op);
+                op += 4;
+                break;
+            }
+            case 0x02: // width
+            {
+                op += 1;
+                width = read_int32(op);
+                op += 4;
+                break;
+            }
+            case 0x03: // height
+            {
+                op += 1;
+                height = read_int32(op);
+                op += 4;
+                break;
+            }
+            case 0x04: // x
+            {
+                op += 1;
+                int32_t x = read_int32(op);
+                op += 4;
+                break;
+            }
+            case 0x05: // y
+            {
+                op += 1;
+                int32_t y = read_int32(op);
+                op += 4;
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+    int32_t title_length = read_int32(op);
+    op += 4;
+    std::string_view title_str((char*)op, title_length + 1);
+
+    ImGui::SetNextWindowSize(ImVec2(width, height));
+    // ImGui::SetNextWindowPos(ImVec2(200, 100));
+
+    ImGui::Begin(title_str.data());
+    ImGui::Text("Hello, mesha!");
+    ImGui::End();
+    return op;
+}
+
+auto mesha_ui_process_view(Ui &ui, uint8_t *bytes) -> void {
+    uint8_t *op = bytes;
+    bool done = false;
+    while (!done) {
+        switch (*op) {
+            case 0x00:
+                op = mesha_ui_process_window(op + 1);
+                done = true;
+                break;
+            case 1:
+                printf("Create view\n");
+                break;
+            case 0xFF:
+                done = true;
+                break;
+            default:
+                printf("Unknown opcode: %d\n", *op);
+                break;
+        }
+    }
+}
+
+auto mesha_ui_process_views(Ui &ui) -> void {
+    for (auto view : ui.impl->views) {
+        mesha_ui_process_view(ui, view);
+    }
+}
+
+auto mesha_ui_create_view(Ui &ui, uint8_t *bytes) -> void {
+    ui.impl->views.push_back(bytes);
 }
