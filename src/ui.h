@@ -17,10 +17,10 @@ struct Ui {
     ~Ui();
 };
 
-bool mesha_ui_init(Ui &ui);
-void mesha_ui_shutdown(Ui &ui);
+auto mesha_ui_init(Ui &ui) -> bool;
+auto mesha_ui_shutdown(Ui &ui) -> void;
 
-bool mesha_ui_begin_frame(Ui &ui);
-void mesha_ui_end_frame(Ui &ui);
+auto mesha_ui_begin_frame(Ui &ui) -> bool;
+auto mesha_ui_end_frame(Ui &ui) -> void;
 
-std::pair<int, int> mesha_ui_get_window_size(Ui &ui);
+auto mesha_ui_get_window_size(Ui &ui) -> std::pair<int, int>; 

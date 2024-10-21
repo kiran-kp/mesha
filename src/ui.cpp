@@ -15,7 +15,7 @@ struct Ui_impl {
 Ui::Ui() = default;
 Ui::~Ui() = default;
 
-bool mesha_ui_init(Ui &ui) {
+auto mesha_ui_init(Ui &ui) -> bool {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
         printf("Error: %s\n", SDL_GetError());
         return false;
@@ -59,7 +59,7 @@ bool mesha_ui_init(Ui &ui) {
     return true;
 }
 
-void mesha_ui_shutdown(Ui &ui) {
+auto mesha_ui_shutdown(Ui &ui) -> void {
     ImGui_ImplSDLRenderer2_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
@@ -71,7 +71,7 @@ void mesha_ui_shutdown(Ui &ui) {
     ui.impl.reset(nullptr);
 }
 
-bool mesha_ui_begin_frame(Ui &ui) {
+auto mesha_ui_begin_frame(Ui &ui) -> bool {
     SDL_Event event;
     bool done = false;
     auto window = ui.impl->window;
@@ -100,7 +100,7 @@ bool mesha_ui_begin_frame(Ui &ui) {
     return !done;
 }
 
-void mesha_ui_end_frame(Ui &ui) {
+auto mesha_ui_end_frame(Ui &ui) -> void {
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     ImGuiIO& io = ImGui::GetIO();
 
@@ -114,7 +114,7 @@ void mesha_ui_end_frame(Ui &ui) {
     SDL_RenderPresent(renderer);
 }
 
-std::pair<int, int> mesha_ui_get_window_size(Ui &ui) {
+auto mesha_ui_get_window_size(Ui &ui) -> std::pair<int, int> {
     int width, height;
     SDL_GetWindowSize(ui.impl->window, &width, &height);
     return {width, height};
