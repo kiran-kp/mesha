@@ -34,7 +34,7 @@
                :no-docking (blshift 1 19)}]
     (get flags flag)))
 
-(defn encode-windows-properties
+(defn encode-window-properties
   [props]
   (def window-properties
     {:is-open 0
@@ -43,37 +43,82 @@
      :height 3
      :x 4
      :y 5})
-  (let [output @[]
+  (let [output @""
         flags (map encode-window-flag (get props :flags))]
     (loop [[key value] :pairs props]
-      (array/push output (get window-properties key))
+      (buffer/push output (get window-properties key))
       (match key
-        :is-open (array/push output (if value 1 0))
-        :flags (array/concat output (reduce bitor flags))
-        :width (array/push output value)
-        :height (array/push output value)
-        :x (array/push output value)
-        :y (array/push output value)))))
+        :is-open (buffer/push output (if value 1 0))
+        :flags (buffer/push-word output (reduce2 bor flags))
+        :width (buffer/push-word output value)
+        :height (buffer/push-word output value)
+        :x (buffer/push-word output value)
+        :y (buffer/push-word output value)))
+        output))
+
+(def opcode
+  {:window 0
+   :text 1
+   :checkbox 2
+   :slider-float 3
+   :button 4
+   :same-line 5
+   :formatted-text 6})
+
+(def messages
+  @{})
 
 (defn encode-view
   [view]
-  (match view
-    [:window props title & children]
-    (let [props (encode-props props)
-          children (map encode-view children)]
-      (list :window props title children))
-    [:text text]
-    (list :text text)
-    [:checkbox text key]
-    (list :checkbox text key)
-    [:slider-float text key]
-    (list :slider-float text key)
-    [:button text key]
-    (list :button text key)
-    [:same-line]
-    [:same-line]
-    [:text fmt & args]
-    (list :text fmt args)))
+  (let [output @""]
+    (defn encode-element [element]
+      (match element
+        [:window props title & children]
+        (do
+          (buffer/push output (get opcode :window))
+          (buffer/push-word output (length props))
+          (buffer/push output (encode-window-properties props))
+          (buffer/push-word output (length title))
+          (buffer/push output title)
+          (each child children
+            (encode-element child)))
+        [:text text & args]
+        (do
+          (buffer/push output (get opcode :text))
+          (buffer/push-word output (length text))
+          (buffer/push output text)
+          (buffer/push-word output (if args (length args) 0))
+          (each arg args
+            (if (string? arg)
+              (do (buffer/push-word output (length arg))
+                       (buffer/push output arg)))
+            (if (number? arg)
+              (do (buffer/push-word output arg)))))
+        [:checkbox text key]
+        (do
+          (buffer/push output (get opcode :checkbox))
+          (buffer/push-word output (length text))
+          (buffer/push output text)
+          (put messages (hash key) key)
+          (buffer/push-word output (hash key)))
+        [:slider-float text key]
+        (do
+          (buffer/push output (get opcode :slider-float))
+          (buffer/push-word output (length text))
+          (buffer/push output text)
+          (put messages (hash key) key)
+          (buffer/push-word output (hash key)))
+        [:button text key]
+        (do
+          (buffer/push output (get opcode :button))
+          (buffer/push-word output (length text))
+          (buffer/push output text)
+          (put messages (hash key) key)
+          (buffer/push-word output (hash key)))
+        [:same-line]
+        (buffer/push output (get opcode :same-line))))
+    (encode-element view)
+    output))
 
 (def main-window
   @{:counter 0
