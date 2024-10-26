@@ -123,58 +123,66 @@ auto mesha_ui_get_window_size(Ui &ui) -> std::pair<int, int> {
     return {width, height};
 }
 
-static auto read_int32(uint8_t *bytes) -> int32_t {
-    return bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[3] << 24);
+static auto read_byte(uint8_t *bytes) -> std::pair<uint8_t, uint8_t*> {
+    return std::make_pair(*bytes, bytes + 1);
 }
 
-auto mesha_ui_process_window(uint8_t *bytes) -> uint8_t* {
-    int32_t num_properties = read_int32(bytes);
-    uint8_t *op = bytes + 4;
+static auto read_int32(uint8_t *bytes) -> std::pair<int32_t, uint8_t*> {
+    return std::make_pair(bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[3] << 24), bytes + 4);
+}
+
+static auto read_string(uint8_t *bytes) -> std::pair<std::string_view, uint8_t*> {
+    int32_t length;
+    std::tie(length, bytes) = read_int32(bytes);
+    return std::make_pair(std::string_view((char*)bytes, length + 1), bytes + length + 1);
+}
+
+auto mesha_ui_begin_window(uint8_t *bytes) -> uint8_t* {
+    int32_t num_properties = 0;
+    std::tie(num_properties, bytes) = read_int32(bytes);
     int32_t width = 100;
     int32_t height = 100;
+    int32_t x = 100;
+    int32_t y = 100;
+    int32_t flags = 0;
     // Process properties
     for (uint8_t i = 0; i < num_properties; i++) {
-        switch (*op) {
+        switch (*bytes) {
             case 0x00: // is-open
             {
-                op += 1;
-                int32_t is_open = read_int32(op);
-                op += 4;
+                bytes += 1;
+                int32_t is_open = 0;
+                std::tie(is_open, bytes) = read_int32(bytes);
                 break;
             }
             case 0x01: // flags
             {
-                op += 1;
-                int32_t flags = read_int32(op);
-                op += 4;
+                bytes += 1;
+                std::tie(flags, bytes) = read_int32(bytes);
                 break;
             }
             case 0x02: // width
             {
-                op += 1;
-                width = read_int32(op);
-                op += 4;
+                bytes += 1;
+                std::tie(width, bytes) = read_int32(bytes);
                 break;
             }
             case 0x03: // height
             {
-                op += 1;
-                height = read_int32(op);
-                op += 4;
+                bytes += 1;
+                std::tie(height, bytes) = read_int32(bytes);
                 break;
             }
             case 0x04: // x
             {
-                op += 1;
-                int32_t x = read_int32(op);
-                op += 4;
+                bytes += 1;
+                std::tie(x, bytes) = read_int32(bytes);
                 break;
             }
             case 0x05: // y
             {
-                op += 1;
-                int32_t y = read_int32(op);
-                op += 4;
+                bytes += 1;
+                std::tie(y, bytes) = read_int32(bytes);
                 break;
             }
             default:
@@ -182,36 +190,61 @@ auto mesha_ui_process_window(uint8_t *bytes) -> uint8_t* {
         }
     }
 
-    int32_t title_length = read_int32(op);
-    op += 4;
-    std::string_view title_str((char*)op, title_length + 1);
+    std::string_view title_str;
+    std::tie(title_str, bytes) = read_string(bytes);
 
     ImGui::SetNextWindowSize(ImVec2(width, height));
-    // ImGui::SetNextWindowPos(ImVec2(200, 100));
+    ImGui::SetNextWindowPos(ImVec2(x, y), ImGuiCond_Once);
 
-    ImGui::Begin(title_str.data());
-    ImGui::Text("Hello, mesha!");
+    ImGui::Begin(title_str.data(), nullptr, flags);
+    return bytes;
+}
+
+auto mesha_ui_end_window() -> void {
     ImGui::End();
-    return op;
+}
+
+auto mesha_ui_text(uint8_t *bytes) -> uint8_t* {
+    std::string_view text_str;
+    std::tie(text_str, bytes) = read_string(bytes);
+    int32_t num_args;
+    std::tie(num_args, bytes) = read_int32(bytes);
+    ImGui::Text("%s", text_str.data());
+    return bytes;
+}
+
+auto mesha_ui_checkbox(uint8_t *bytes) -> uint8_t* {
+    std::string_view label_str;
+    std::tie(label_str, bytes) = read_string(bytes);
+    int32_t value;
+    std::tie(value, bytes) = read_int32(bytes);
+    ImGui::Checkbox(label_str.data(), (bool*)&value);
+    return bytes;
 }
 
 auto mesha_ui_process_view(Ui &ui, uint8_t *bytes) -> void {
-    uint8_t *op = bytes;
-    bool done = false;
-    while (!done) {
-        switch (*op) {
+    int32_t view_length;
+    uint8_t *start = bytes;
+    std::tie(view_length, bytes) = read_int32(bytes);
+    uint8_t *end = bytes + view_length;
+    while (bytes < end) {
+        uint8_t op;
+        std::tie(op, bytes) = read_byte(bytes);
+        switch (op) {
             case 0x00:
-                op = mesha_ui_process_window(op + 1);
-                done = true;
+                bytes = mesha_ui_begin_window(bytes);
                 break;
-            case 1:
-                printf("Create view\n");
+            case 0x01:
+                bytes = mesha_ui_text(bytes);
+                break;
+            case 0x02:
+                bytes = mesha_ui_checkbox(bytes);
                 break;
             case 0xFF:
-                done = true;
+                mesha_ui_end_window();
                 break;
             default:
-                printf("Unknown opcode: %d\n", *op);
+                printf("Unknown opcode: %d\n", op);
                 break;
         }
     }

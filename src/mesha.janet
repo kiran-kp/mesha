@@ -126,7 +126,8 @@
         (buffer/push output (get opcode :same-line))))
     (encode-element view)
     (buffer/push output (get opcode :done))
-    output))
+    (buffer/push (buffer/push-word @"" (length output))
+                 output)))
 
 (def main-window
   @{:counter 0
@@ -144,21 +145,18 @@
     (fn [self]
       [:window {:width 640
                 :height 480
-                :x 0
+                :x 300
                 :y 0
-                :flags [:no-resize
-                        :no-title-bar
-                        :menu-bar
-                        :no-move
-                        :no-bring-to-front-on-focus]}
+                :flags [:menu-bar]}
        "Mesha"
        [:text "This is some useful text."]
-       [:checkbox "Demo Window" :show-demo-window]
-       [:checkbox "Another Window" :show-another-window]
-       [:slider-float "float" :f-slider]
-       [:button "Button" :increment-counter]
-       [:same-line]
-       [:text "counter = %d" (get self :counter)]])})
+       # [:checkbox "Demo Window" (get self :show-demo-window) :show-demo-window]
+       # [:checkbox "Another Window" :show-another-window]
+       # [:slider-float "float" :f-slider]
+       # [:button "Button" :increment-counter]
+       # [:same-line]
+       # [:text "counter = %d" (get self :counter)]
+       ])})
 
 (defn main
   [args]
