@@ -77,63 +77,84 @@
 
 (defn encode-view
   [view]
-  (let [output @""]
+
+  (def encoder
+  @{:buffer @""
+    :push-bytes
+    (fn [self b]
+      (buffer/push (get self :buffer) b))
+    :push-boolean
+    (fn [self b]
+      (buffer/push-word (get self :buffer) (if b 1 0)))
+    :push-integer
+    (fn [self n]
+      (buffer/push-word (get self :buffer) n))
+    :push-string 
+    (fn [self s]
+      (buffer/push-word (get self :buffer) (length s))
+      (buffer/push (get self :buffer) s "\0"))
+    :commit
+    (fn [self]
+      (:push-bytes self (get opcode :done))
+      (let [buf (get self :buffer)
+            output (buffer/new (+ 4 (length buf)))]
+        (buffer/push-word output (length buf))
+        (buffer/push output buf)
+        output))})
+
+  (defn make-encoder
+   []
+   (table/setproto @{:buffer (buffer/new 128)} encoder))
+
+  (let [enc (make-encoder)]
     (defn encode-element [element]
       (match element
         [:window props title & children]
         (do
-          (buffer/push output (get opcode :window))
-          (buffer/push-word output (length props))
-          (buffer/push output (encode-window-properties props))
-          (buffer/push-word output (length title))
-          (buffer/push output title "\0")
+          (:push-bytes enc (get opcode :window))
+          (:push-integer enc (length props))
+          (:push-bytes enc (encode-window-properties props))
+          (:push-string enc title)
           (each child children
             (encode-element child)))
         [:text text & args]
         (do
-          (buffer/push output (get opcode :text))
-          (buffer/push-word output (length text))
-          (buffer/push output text "\0")
-          (buffer/push-word output (if args (length args) 0))
+          (:push-bytes enc (get opcode :text))
+          (:push-string enc text)
+          (:push-integer enc (if args (length args) 0))
           (each arg args
             (if (string? arg)
-              (do (buffer/push-word output (length arg))
-                       (buffer/push output arg)))
+              (:push-string enc arg))
             (if (number? arg)
-              (do (buffer/push-word output arg)))))
-        [:checkbox text key]
+              (:push-integer enc arg))))
+        [:checkbox text value key]
         (do
-          (buffer/push output (get opcode :checkbox))
-          (buffer/push-word output (length text))
-          (buffer/push output text)
+          (:push-bytes enc (get opcode :checkbox))
+          (:push-string enc text)
+          (:push-boolean enc value)
           (put messages (hash key) key)
-          (buffer/push-word output (hash key)))
+          (:push-integer enc (hash key)))
         [:slider-float text key]
         (do
-          (buffer/push output (get opcode :slider-float))
-          (buffer/push-word output (length text))
-          (buffer/push output text)
+          (:push-bytes enc (get opcode :slider-float))
+          (:push-string enc text)
           (put messages (hash key) key)
-          (buffer/push-word output (hash key)))
+          (:push-integer enc (hash key)))
         [:button text key]
         (do
-          (buffer/push output (get opcode :button))
-          (buffer/push-word output (length text))
-          (buffer/push output text)
+          (:push-bytes enc (get opcode :button))
+          (:push-string enc text)
           (put messages (hash key) key)
-          (buffer/push-word output (hash key)))
+          (:push-integer enc (hash key)))
         [:same-line]
-        (buffer/push output (get opcode :same-line))))
+        (:push-bytes enc (get opcode :same-line))))
     (encode-element view)
-    (buffer/push output (get opcode :done))
-    (buffer/push (buffer/push-word @"" (length output))
-                 output)))
+    (:commit enc)))
 
 (def main-window
   @{:counter 0
     :f 0.0
     :show-demo-window true
-    :show-another-window false
     :update
     (fn [self msg]
       (match msg
@@ -149,14 +170,13 @@
                 :y 0
                 :flags [:menu-bar]}
        "Mesha"
-       [:text "This is some useful text."]
-       # [:checkbox "Demo Window" (get self :show-demo-window) :show-demo-window]
-       # [:checkbox "Another Window" :show-another-window]
+       [:text "This is some text"]
+       [:checkbox "Checkbox demo" (get self :show-demo-window) :show-demo-window]
        # [:slider-float "float" :f-slider]
        # [:button "Button" :increment-counter]
        # [:same-line]
        # [:text "counter = %d" (get self :counter)]
-       ])})
+      ])})
 
 (defn main
   [args]
