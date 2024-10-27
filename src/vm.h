@@ -8,14 +8,15 @@ struct Command {
     enum class Type {
         Invalid,
         InitUi,
-        CreateView,
+        PushView,
         Quit
     } type;
 
     union {
         struct {
+            const uint8_t *id;
             uint8_t *bytecode;
-        } create_view;
+        } push_view;
 
         struct {
             bool had_error = false;
@@ -31,10 +32,11 @@ struct Command {
         return cmd;
     }
 
-    static auto create_view_cmd(uint8_t *bytes) -> Command {
+    static auto push_view_cmd(const uint8_t *id, uint8_t *bytes) -> Command {
         Command cmd;
-        cmd.type = Type::CreateView;
-        cmd.create_view.bytecode = bytes;
+        cmd.type = Type::PushView;
+        cmd.push_view.id = id;
+        cmd.push_view.bytecode = bytes;
         return cmd;
     }
 

@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <optional>
 #include <string_view>
+#include <unordered_map>
 #include <utility>
 
 using UiResult = std::pair<std::optional<UiMessage>, uint8_t*>;
@@ -15,7 +16,7 @@ using UiFunction = UiResult (*)(uint8_t*);
 struct Ui_impl {
     SDL_Window *window;
     SDL_Renderer *renderer;
-    std::vector<uint8_t*> views;
+    std::unordered_map<const uint8_t*, uint8_t*> views;
 };
 
 Ui::Ui() = default;
@@ -557,10 +558,15 @@ auto mesha_ui_process_view(Ui &ui, uint8_t *bytes, std::vector<UiMessage>& messa
 
 auto mesha_ui_process_views(Ui &ui, std::vector<UiMessage>& messages) -> void {
     for (auto view : ui.impl->views) {
-        mesha_ui_process_view(ui, view, messages);
+        mesha_ui_process_view(ui, view.second, messages);
     }
 }
 
-auto mesha_ui_create_view(Ui &ui, uint8_t *bytes) -> void {
-    ui.impl->views.push_back(bytes);
+auto mesha_ui_push_view(Ui &ui, const uint8_t *id, uint8_t *bytes) -> void {
+    auto& views = ui.impl->views;
+    if (views.find(id) != views.end()) {
+        delete views[id];
+    }
+
+    ui.impl->views.insert_or_assign(id, bytes);
 }

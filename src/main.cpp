@@ -55,8 +55,8 @@ auto main(int argc, char **argv) -> int {
                     mesha_ui_init(ui);
                     message_queue.enqueue(Message::ui_ready_msg());
                     break;
-                case Command::Type::CreateView:
-                    mesha_ui_create_view(ui, cmd.create_view.bytecode);
+                case Command::Type::PushView:
+                    mesha_ui_push_view(ui, cmd.push_view.id, cmd.push_view.bytecode);
                     break;
                 case Command::Type::Quit:
                     should_quit = true;

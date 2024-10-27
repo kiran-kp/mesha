@@ -195,7 +195,7 @@
   (let [id (get view :id)]
     (put views id view)))
 
-(defn ui-update
+(defn do-update
   []
   (let [messages (get-messages)]
     (each msg messages
@@ -203,12 +203,13 @@
         :ui-ready
         (do
           (push-view main-window)
-          (enqueue-command :create-view (encode-view main-window)))
+          (enqueue-command :push-view (get main-window :id) (encode-view main-window)))
         [[:ui-message & rest] payload]
         (let [id (get rest 0)
               view (get views id)
               view-msg (tuple/slice rest 1)]
-          (:update view [view-msg payload]))
+          (:update view [view-msg payload])
+          (enqueue-command :push-view (get main-window :id)  (encode-view main-window)))
         _
         (printf "Unknown message: %P" msg)))))
 
@@ -219,4 +220,4 @@
   (enqueue-command :init-ui)
   (let [quit? false]
     (while (not quit?)
-      (ui-update))))
+      (do-update))))
