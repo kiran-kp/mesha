@@ -1,10 +1,11 @@
+#pragma once
 #include <readerwriterqueue.h>
 
 #include <memory>
 #include <vector>
 
 struct Command {
-    enum Type {
+    enum class Type {
         Invalid,
         InitUi,
         CreateView,
@@ -21,38 +22,76 @@ struct Command {
         } quit;
     };
 
-    Command() : type(Invalid) {
+    Command() : type(Type::Invalid) {
     }
 
     static auto init_ui_cmd() -> Command {
         Command cmd;
-        cmd.type = InitUi;
+        cmd.type = Type::InitUi;
         return cmd;
     }
 
     static auto create_view_cmd(uint8_t *bytes) -> Command {
         Command cmd;
-        cmd.type = CreateView;
+        cmd.type = Type::CreateView;
         cmd.create_view.bytecode = bytes;
         return cmd;
     }
 
     static auto quit_cmd(bool had_error) -> Command {
         Command cmd;
-        cmd.type = Quit;
+        cmd.type = Type::Quit;
         cmd.quit.had_error = had_error;
         return cmd;
     }
 };
 
-struct Message {
-    enum Type {
+struct UiMessageKey {
+    uint8_t *data = nullptr;
+};
+
+struct UiMessagePayload {
+    enum class Type {
         Invalid,
-        UiReady
+        Integer
+    };
+
+    size_t size = 0;
+    uint8_t *data = nullptr;
+};
+
+struct UiMessage {
+    UiMessageKey key;
+    UiMessagePayload payload;
+};
+
+struct Message {
+    enum class Type : int32_t {
+        Invalid,
+        UiReady,
+        UiMessage
     } type;
 
     union {
+        UiMessage ui_message;
+        intptr_t value;
     };
+
+    Message() : type(Type::Invalid), value(0) {
+    }
+
+    static auto ui_ready_msg() -> Message {
+        Message msg;
+        msg.type = Type::UiReady;
+        return msg;
+    }
+
+    static auto ui_message_msg(UiMessage&& ui_msg) -> Message {
+        Message msg;
+        msg.type = Type::UiMessage;
+        msg.ui_message = std::move(ui_msg);
+        return msg;
+    }
 };
 
 using CommandQueue = moodycamel::BlockingReaderWriterQueue<Command>;

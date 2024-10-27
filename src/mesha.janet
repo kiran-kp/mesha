@@ -1,14 +1,5 @@
 # Application code for Mesha
 
-(def f (fiber/new (fn []
-                    (print "Hello")
-                    (yield)
-                    (print "world")
-                    (yield)
-                    (print "from a")
-                    (yield)
-                    (print "fiber!"))))
-
 (defn encode-window-flag
   [flag]
   (let [flags {:none 0
@@ -47,7 +38,6 @@
     (loop [[key value] :pairs props]
       (defn push
         [k v]
-        (printf "key: %v %j value: %j %j" key k value v)
         (buffer/push output k)
         (if (bytes? v)
           (buffer/push output v)
@@ -72,14 +62,14 @@
    :formatted-text "\x06"
    :done "\xFF"})
 
-(def messages
-  @{})
-
 (defn encode-view
-  [view]
+  [obj]
 
   (def encoder
   @{:buffer @""
+    :new
+    (fn [self]
+      (table/setproto @{:buffer (buffer/new 128)} self))
     :push-bytes
     (fn [self b]
       (buffer/push (get self :buffer) b))
@@ -93,9 +83,29 @@
     (fn [self s]
       (buffer/push-word (get self :buffer) (length s))
       (buffer/push (get self :buffer) s "\0"))
+    :push-message
+    (fn [self root msg]
+      (assert (or (tuple? msg) (keyword? msg)))
+      (assert (tuple? root))
+      (let [msg-encoder (:new self)]
+        (if (keyword? msg)
+          (do
+            (:push-integer msg-encoder (+ (length root) 1))
+            (each m root
+              (:push-string msg-encoder m))
+            (:push-string msg-encoder msg))
+          (do
+            (:push-integer msg-encoder (+ (length root) (length msg)))
+            (each m root
+              (:push-string msg-encoder m))
+            (each m msg
+              (:push-string msg-encoder m))))
+        (:push-bytes self (:commit msg-encoder))))
+    :push-done
+    (fn [self]
+      (:push-bytes self (get opcode :done)))
     :commit
     (fn [self]
-      (:push-bytes self (get opcode :done))
       (let [buf (get self :buffer)
             output (buffer/new (+ 4 (length buf)))]
         (buffer/push-word output (length buf))
@@ -107,7 +117,7 @@
    (table/setproto @{:buffer (buffer/new 128)} encoder))
 
   (let [enc (make-encoder)]
-    (defn encode-element [element]
+    (defn encode-element [root element]
       (match element
         [:window props title & children]
         (do
@@ -116,7 +126,7 @@
           (:push-bytes enc (encode-window-properties props))
           (:push-string enc title)
           (each child children
-            (encode-element child)))
+            (encode-element root child)))
         [:text text & args]
         (do
           (:push-bytes enc (get opcode :text))
@@ -127,40 +137,39 @@
               (:push-string enc arg))
             (if (number? arg)
               (:push-integer enc arg))))
-        [:checkbox text value key]
+        [:checkbox text value msg]
         (do
           (:push-bytes enc (get opcode :checkbox))
           (:push-string enc text)
           (:push-boolean enc value)
-          (put messages (hash key) key)
-          (:push-integer enc (hash key)))
-        [:slider-float text key]
+          (:push-message enc root msg))
+        [:slider-float text msg]
         (do
           (:push-bytes enc (get opcode :slider-float))
           (:push-string enc text)
-          (put messages (hash key) key)
-          (:push-integer enc (hash key)))
-        [:button text key]
+          (:push-message enc root msg))
+        [:button text msg]
         (do
           (:push-bytes enc (get opcode :button))
           (:push-string enc text)
-          (put messages (hash key) key)
-          (:push-integer enc (hash key)))
+          (:push-message enc root msg))
         [:same-line]
         (:push-bytes enc (get opcode :same-line))))
-    (encode-element view)
+    (encode-element [:ui-message (get obj :id)] (:view obj))
+    (:push-done enc)
     (:commit enc)))
 
 (def main-window
   @{:counter 0
     :f 0.0
     :show-demo-window true
+    :id :main-window
     :update
     (fn [self msg]
+      (printf "Update: %P" msg)
       (match msg
         [:increment-counter] (put self :counter (+ 1 (get self :counter)))
-        [:show-demo-window] (put self :show-demo-window (not (get self :show-demo-window)))
-        [:show-another-window] (put self :show-another-window (not (get self :show-another-window)))
+        [[:show-demo-window] val] (put self :show-demo-window (= 1 val))
         [:f-slider] (put self :f (get msg 2))))
     :view
     (fn [self]
@@ -178,18 +187,36 @@
        # [:text "counter = %d" (get self :counter)]
       ])})
 
+(def views
+  @{})
+
+(defn push-view
+  [view]
+  (let [id (get view :id)]
+    (put views id view)))
+
+(defn ui-update
+  []
+  (let [messages (get-messages)]
+    (each msg messages
+      (match msg
+        :ui-ready
+        (do
+          (push-view main-window)
+          (enqueue-command :create-view (encode-view main-window)))
+        [[:ui-message & rest] payload]
+        (let [id (get rest 0)
+              view (get views id)
+              view-msg (tuple/slice rest 1)]
+          (:update view [view-msg payload]))
+        _
+        (printf "Unknown message: %P" msg)))))
+
 (defn main
   [args]
   "Entry point for Mesha"
   (setdyn *args* args)
-  (printf "Starting UI. %v %j" (fiber/status f) (encode-view (:view main-window)))
   (enqueue-command :init-ui)
-  (enqueue-command :create-view (encode-view (:view main-window)))
-  (resume f)
-  (printf "This is the next run: %v" (fiber/status f))
-  (resume f)
-  (printf "One more run: %v" (fiber/status f))
-  (resume f)
-  (printf "One more run: %v" (fiber/status f))
-  (resume f)
-  (printf "One more run: %v" (fiber/status f)))
+  (let [quit? false]
+    (while (not quit?)
+      (ui-update))))

@@ -5,9 +5,12 @@
 #include <SDL.h>
 
 #include <cstdio>
+#include <optional>
 #include <string_view>
 #include <utility>
-#include <vector>
+
+using UiResult = std::pair<std::optional<UiMessage>, uint8_t*>;
+using UiFunction = UiResult (*)(uint8_t*);
 
 struct Ui_impl {
     SDL_Window *window;
@@ -137,7 +140,35 @@ static auto read_string(uint8_t *bytes) -> std::pair<std::string_view, uint8_t*>
     return std::make_pair(std::string_view((char*)bytes, length + 1), bytes + length + 1);
 }
 
-auto mesha_ui_begin_window(uint8_t *bytes) -> std::pair<int32_t, uint8_t*> {
+static auto read_message_key(uint8_t *bytes) -> std::pair<UiMessageKey, uint8_t*> {
+    int32_t length;
+    uint8_t* orig_bytes = bytes;
+    std::tie(length, bytes) = read_int32(bytes);
+    UiMessageKey key;
+    key.data = orig_bytes;
+    return std::make_pair(key, bytes + length);
+}
+
+static auto write_byte(UiMessagePayload &msg, uint8_t byte) -> void {
+    msg.data[msg.size] = byte;
+    msg.size += 1;
+}
+
+static auto write_integer(UiMessagePayload &msg, int32_t value) -> void {
+    write_byte(msg, (uint8_t)(value & 0xFF));
+    write_byte(msg, (uint8_t)((value >> 8) & 0xFF));
+    write_byte(msg, (uint8_t)((value >> 16) & 0xFF));
+    write_byte(msg, (uint8_t)((value >> 24) & 0xFF));
+}
+
+static auto write_string(UiMessagePayload &msg, std::string_view str) -> void {
+    write_integer(msg, str.size());
+    for (auto c : str) {
+        write_byte(msg, c);
+    }
+}
+
+auto mesha_ui_begin_window(uint8_t *bytes) -> UiResult {
     int32_t num_properties = 0;
     std::tie(num_properties, bytes) = read_int32(bytes);
     int32_t width = 100;
@@ -197,44 +228,63 @@ auto mesha_ui_begin_window(uint8_t *bytes) -> std::pair<int32_t, uint8_t*> {
     ImGui::SetNextWindowPos(ImVec2(x, y), ImGuiCond_Once);
 
     ImGui::Begin(title_str.data(), nullptr, flags);
-    return std::make_pair(0, bytes);
+    return std::make_pair(std::nullopt, bytes);
 }
 
-auto mesha_ui_end_window(uint8_t *bytes) -> std::pair<int32_t, uint8_t*> {
+auto mesha_ui_end_window(uint8_t *bytes) -> UiResult {
     ImGui::End();
-    return std::make_pair(0, bytes);
+    return std::make_pair(std::nullopt, bytes);
 }
 
-auto mesha_ui_text(uint8_t *bytes) -> std::pair<int32_t, uint8_t*> {
+auto mesha_ui_text(uint8_t *bytes) -> UiResult {
     std::string_view text_str;
     std::tie(text_str, bytes) = read_string(bytes);
+
     int32_t num_args;
     std::tie(num_args, bytes) = read_int32(bytes);
+
     ImGui::Text("%s", text_str.data());
-    return std::make_pair(0, bytes);
+
+    return std::make_pair(std::nullopt, bytes);
 }
 
-auto mesha_ui_checkbox(uint8_t *bytes) -> std::pair<int32_t, uint8_t*> {
+auto mesha_ui_checkbox(uint8_t *bytes) -> UiResult {
     std::string_view label_str;
     std::tie(label_str, bytes) = read_string(bytes);
+
     int32_t value;
     std::tie(value, bytes) = read_int32(bytes);
+    assert(value == 0 || value == 1);
+
     bool has_changed = ImGui::Checkbox(label_str.data(), (bool*)&value);
-    int32_t message;
-    std::tie(message, bytes) = read_int32(bytes);
-    return std::make_pair(has_changed ? message : 0, bytes);
+
+    UiMessageKey key;
+    std::tie(key, bytes) = read_message_key(bytes);
+    
+    UiResult result;
+    result.first = std::nullopt;
+    result.second = bytes;
+    if (has_changed) {
+        UiMessage message;
+        message.key = key;
+        message.payload.size = 0;
+        message.payload.data = new uint8_t[sizeof(int32_t) * 3];
+        write_integer(message.payload, 1);
+        write_integer(message.payload, static_cast<int32_t>(UiMessagePayload::Type::Integer));
+        write_integer(message.payload, value);
+        result.first = std::make_optional(message);
+    }
+
+    return result;
 }
 
-using UiFunction = std::pair<int32_t, uint8_t*>(*)(uint8_t*);
-
-auto mesha_ui_process_view(Ui &ui, uint8_t *bytes) -> void {
+auto mesha_ui_process_view(Ui &ui, uint8_t *bytes, std::vector<UiMessage>& messages) -> void {
     int32_t view_length;
     uint8_t *start = bytes;
     std::tie(view_length, bytes) = read_int32(bytes);
     uint8_t *end = bytes + view_length;
     while (bytes < end) {
         uint8_t op;
-        int32_t message;
         std::tie(op, bytes) = read_byte(bytes);
         UiFunction ops[256] = {
             mesha_ui_begin_window,
@@ -496,14 +546,18 @@ auto mesha_ui_process_view(Ui &ui, uint8_t *bytes) -> void {
         };
         
         if (ops[op] != nullptr) {
-            std::tie(message, bytes) = ops[op](bytes);
+            UiResult r = ops[op](bytes);
+            bytes = r.second;
+            if (r.first.has_value()) {
+                messages.push_back(r.first.value());
+            }
         }
     }
 }
 
-auto mesha_ui_process_views(Ui &ui) -> void {
+auto mesha_ui_process_views(Ui &ui, std::vector<UiMessage>& messages) -> void {
     for (auto view : ui.impl->views) {
-        mesha_ui_process_view(ui, view);
+        mesha_ui_process_view(ui, view, messages);
     }
 }
 

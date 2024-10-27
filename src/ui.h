@@ -1,6 +1,9 @@
 #pragma once
 
+#include <vm.h>
+
 #include <memory>
+#include <vector>
 
 struct Ui_impl;
 
@@ -23,7 +26,7 @@ auto mesha_ui_shutdown(Ui &ui) -> void;
 auto mesha_ui_begin_frame(Ui &ui) -> bool;
 auto mesha_ui_end_frame(Ui &ui) -> void;
 
-auto mesha_ui_get_window_size(Ui &ui) -> std::pair<int, int>;
+auto mesha_ui_get_window_size(Ui &ui) -> std::pair<int32_t, int32_t>;
 
-auto mesha_ui_process_views(Ui &ui) -> void;
+auto mesha_ui_process_views(Ui &ui, std::vector<UiMessage>& messages) -> void;
 auto mesha_ui_create_view(Ui &ui, uint8_t *bytes) -> void;

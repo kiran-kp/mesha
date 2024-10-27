@@ -41,6 +41,7 @@ static auto enqueue_command(int32_t argc, Janet *argv) -> Janet {
     bool handled = false;
     auto impl = the_vm->impl.get();
     JanetKeyword command = janet_getkeyword(argv, 0);
+    printf("command: %s\n", command);
     if (command == janet_ckeyword("init-ui")) {
         impl->command_queue->enqueue(Command::init_ui_cmd());
         handled = true;
@@ -56,6 +57,94 @@ static auto enqueue_command(int32_t argc, Janet *argv) -> Janet {
     }
 
     return handled ? janet_wrap_true() : janet_wrap_false();
+}
+
+static auto read_byte(uint8_t *bytes) -> std::pair<uint8_t, uint8_t*> {
+    return std::make_pair(*bytes, bytes + 1);
+}
+
+static auto read_int32(uint8_t *bytes) -> std::pair<int32_t, uint8_t*> {
+    return std::make_pair(bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[3] << 24), bytes + 4);
+}
+
+static auto read_string(uint8_t *bytes) -> std::pair<std::string_view, uint8_t*> {
+    int32_t length;
+    std::tie(length, bytes) = read_int32(bytes);
+    return std::make_pair(std::string_view((char*)bytes, length + 1), bytes + length + 1);
+}
+
+static auto read_message_key(const UiMessageKey &key) -> Janet {
+    int32_t length = 0;
+    uint8_t *bytes = key.data;
+    std::tie(length, bytes) = read_int32(bytes);
+    int32_t num_parts = 0;
+    std::tie(num_parts, bytes) = read_int32(bytes);
+
+    auto jmsg_key = janet_tuple_begin(num_parts);
+    for (int i = 0; i < num_parts; i++) {
+        std::string_view part;
+        std::tie(part, bytes) = read_string(bytes);
+        jmsg_key[i] = janet_ckeywordv(part.data());
+    }
+    janet_tuple_end(jmsg_key);
+
+    return janet_wrap_tuple(jmsg_key);
+}
+
+static auto read_ui_message_payload_item(uint8_t *bytes) -> std::pair<Janet, uint8_t*> {
+    int32_t type;
+    std::tie(type, bytes) = read_int32(bytes);
+    switch (static_cast<UiMessagePayload::Type>(type)) {
+        case UiMessagePayload::Type::Integer: {
+            int32_t value;
+            std::tie(value, bytes) = read_int32(bytes);
+            return std::make_pair(janet_wrap_integer(value), bytes);
+        }
+        default:
+            assert(false);
+            return std::make_pair(janet_wrap_nil(), bytes);
+    }
+}
+
+static auto get_messages(int32_t argc, Janet *argv) -> Janet {
+    janet_fixarity(argc, 0);
+    auto impl = the_vm->impl.get();
+    auto messages = janet_array(8);
+    Message msg;
+    while (impl->message_queue->try_dequeue(msg)) {
+        switch (msg.type) {
+            case Message::Type::UiMessage: {
+                auto jmsg_key = read_message_key(msg.ui_message.key);
+
+                int32_t num_payload_items = 0;
+                uint8_t *bytes = msg.ui_message.payload.data;
+                std::tie(num_payload_items, bytes) = read_int32(bytes);
+
+                auto jmsg = janet_tuple_begin(num_payload_items + 1);
+                jmsg[0] = jmsg_key;
+                for  (int i = 0; i < num_payload_items; i++) {
+                    Janet item;
+                    std::tie(item, bytes) = read_ui_message_payload_item(bytes);
+                    jmsg[i + 1] = item;
+                }
+                auto tup = janet_tuple_end(jmsg);
+                delete msg.ui_message.payload.data;
+
+                janet_array_push(messages, janet_wrap_tuple(tup));
+
+                break;
+            }
+            case Message::Type::UiReady: {
+                auto jmsg = janet_wrap_keyword(janet_ckeyword("ui-ready"));
+                janet_array_push(messages, jmsg);
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+    return janet_wrap_array(messages);
 }
 
 auto mesha_vm_init(Vm &vm, const VmInitArgs &args) -> void {
@@ -81,6 +170,9 @@ auto mesha_vm_init(Vm &vm, const VmInitArgs &args) -> void {
         {"enqueue-command",
          enqueue_command,
          "(enqueue-command cmd)\n\nEnqueues a command and returns true if it was successfully enqueued."},
+         {"get-messages",
+         get_messages,
+         "(get-messages)\n\nEnqueues a command and returns true if it was successfully enqueued."},
         {NULL, NULL, NULL}
     };
 

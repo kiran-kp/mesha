@@ -4,6 +4,7 @@
 #include <imgui.h>
 
 #include <thread>
+#include <vector>
 
 auto script_thread_fn(const VmInitArgs &args) -> void {
     Vm vm;
@@ -41,6 +42,7 @@ auto main(int argc, char **argv) -> int {
     std::thread script_thread(script_thread_fn, args);
 
     Ui ui;
+    std::vector<UiMessage> messages;
     bool should_quit = false;
 
     while (!should_quit && !ui.should_quit) {
@@ -49,16 +51,17 @@ auto main(int argc, char **argv) -> int {
         if (command_queue.wait_dequeue_timed(cmd, 
                                              std::chrono::milliseconds(10))) {
             switch (cmd.type) {
-                case Command::InitUi:
+                case Command::Type::InitUi:
                     mesha_ui_init(ui);
+                    message_queue.enqueue(Message::ui_ready_msg());
                     break;
-                case Command::CreateView:
+                case Command::Type::CreateView:
                     mesha_ui_create_view(ui, cmd.create_view.bytecode);
                     break;
-                case Command::Quit:
+                case Command::Type::Quit:
                     should_quit = true;
                     break;
-                case Command::Invalid:
+                case Command::Type::Invalid:
                     break;
             }
         }
@@ -66,22 +69,13 @@ auto main(int argc, char **argv) -> int {
         // Update UI
         if (ui.is_initialized) {
             mesha_ui_begin_frame(ui);
-            auto [width, height] = mesha_ui_get_window_size(ui);
-            /*
-            ImGui::SetNextWindowSize(ImVec2(width, height));
-            ImGui::SetNextWindowPos(ImVec2(0, 0));
-            auto flags = ImGuiWindowFlags_NoResize |
-                         ImGuiWindowFlags_NoTitleBar |
-                         ImGuiWindowFlags_MenuBar |
-                         ImGuiWindowFlags_NoMove |
-                         ImGuiWindowFlags_NoBringToFrontOnFocus;
-            if (ImGui::Begin("Mesha", nullptr, flags)) {
-                show_main_menu_bar();
+            mesha_ui_process_views(ui, messages);
+
+            for (auto& message : messages) {
+                message_queue.enqueue(Message::ui_message_msg(std::move(message)));
             }
 
-            ImGui::End();
-            */
-            mesha_ui_process_views(ui);
+            messages.clear();
 
             mesha_ui_end_frame(ui);
         }
