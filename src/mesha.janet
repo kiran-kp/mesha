@@ -162,11 +162,10 @@
 (def main-window
   @{:counter 0
     :f 0.0
-    :show-demo-window true
+    :show-demo-window false
     :id :main-window
     :update
     (fn [self msg]
-      (printf "Update: %P" msg)
       (match msg
         [:increment-counter] (put self :counter (+ 1 (get self :counter)))
         [[:show-demo-window] val] (put self :show-demo-window (= 1 val))
@@ -181,6 +180,8 @@
        "Mesha"
        [:text "This is some text"]
        [:checkbox "Checkbox demo" (get self :show-demo-window) :show-demo-window]
+       (if (get self :show-demo-window)
+        [:text "This is some dynamic updates to the window"])
        # [:slider-float "float" :f-slider]
        # [:button "Button" :increment-counter]
        # [:same-line]
