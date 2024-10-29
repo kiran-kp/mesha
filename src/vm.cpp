@@ -4,6 +4,7 @@
 
 #include <fstream>
 #include <string>
+#include <thread>
 
 struct VmImpl {
     JanetTable *env;
@@ -107,12 +108,14 @@ static auto read_ui_message_payload_item(uint8_t *bytes) -> std::pair<Janet, uin
     }
 }
 
-static auto get_messages(int32_t argc, Janet *argv) -> Janet {
+static auto get_message(int32_t argc, Janet *argv) -> Janet {
     janet_fixarity(argc, 0);
     auto impl = the_vm->impl.get();
     auto messages = janet_array(8);
     Message msg;
-    while (impl->message_queue->try_dequeue(msg)) {
+    impl->message_queue->wait_dequeue(msg);
+    Janet result;
+    {
         switch (msg.type) {
             case Message::Type::UiMessage: {
                 auto jmsg_key = read_message_key(msg.ui_message.key);
@@ -131,13 +134,12 @@ static auto get_messages(int32_t argc, Janet *argv) -> Janet {
                 auto tup = janet_tuple_end(jmsg);
                 delete msg.ui_message.payload.data;
 
-                janet_array_push(messages, janet_wrap_tuple(tup));
+                result = janet_wrap_tuple(tup);
 
                 break;
             }
             case Message::Type::UiReady: {
-                auto jmsg = janet_wrap_keyword(janet_ckeyword("ui-ready"));
-                janet_array_push(messages, jmsg);
+                result = janet_wrap_keyword(janet_ckeyword("ui-ready"));
                 break;
             }
             default:
@@ -145,7 +147,7 @@ static auto get_messages(int32_t argc, Janet *argv) -> Janet {
         }
     }
 
-    return janet_wrap_array(messages);
+    return result;
 }
 
 auto mesha_vm_init(Vm &vm, const VmInitArgs &args) -> void {
@@ -171,9 +173,9 @@ auto mesha_vm_init(Vm &vm, const VmInitArgs &args) -> void {
         {"enqueue-command",
          enqueue_command,
          "(enqueue-command cmd)\n\nEnqueues a command and returns true if it was successfully enqueued."},
-         {"get-messages",
-         get_messages,
-         "(get-messages)\n\nEnqueues a command and returns true if it was successfully enqueued."},
+         {"get-message",
+         get_message,
+         "(get-message)\n\nBlocks till a message is received and returns the message."},
         {NULL, NULL, NULL}
     };
 

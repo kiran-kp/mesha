@@ -198,21 +198,21 @@
 
 (defn do-update
   []
-  (let [messages (get-messages)]
-    (each msg messages
-      (match msg
-        :ui-ready
-        (do
-          (push-view main-window)
-          (enqueue-command :push-view (get main-window :id) (encode-view main-window)))
-        [[:ui-message & rest] payload]
-        (let [id (get rest 0)
-              view (get views id)
-              view-msg (tuple/slice rest 1)]
-          (:update view [view-msg payload])
-          (enqueue-command :push-view (get main-window :id)  (encode-view main-window)))
-        _
-        (printf "Unknown message: %P" msg)))))
+  (let [msg (get-message)]
+    (print "Got message")
+    (match msg
+      :ui-ready
+      (do
+        (push-view main-window)
+        (enqueue-command :push-view (get main-window :id) (encode-view main-window)))
+      [[:ui-message & rest] payload]
+      (let [id (get rest 0)
+            view (get views id)
+            view-msg (tuple/slice rest 1)]
+        (:update view [view-msg payload])
+        (enqueue-command :push-view (get main-window :id)  (encode-view main-window)))
+      _
+      (printf "Unknown message: %P" msg))))
 
 (defn main
   [args]
