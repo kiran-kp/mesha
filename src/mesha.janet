@@ -56,10 +56,9 @@
   {:window "\x00"
    :text "\x01"
    :checkbox "\x02"
-   :slider-float "\x03"
-   :button "\x04"
-   :same-line "\x05"
-   :formatted-text "\x06"
+   :button "\x03"
+   :same-line "\x04"
+   :slider-float "\x05"
    :done "\xFF"})
 
 (defn encode-view

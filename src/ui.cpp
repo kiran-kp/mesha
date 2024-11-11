@@ -320,9 +320,9 @@ auto mesha_ui_process_view(Ui &ui, uint8_t *bytes, std::vector<UiMessage>& messa
             mesha_ui_begin_window,    // 0x00
             mesha_ui_text,            // 0x01
             mesha_ui_checkbox,        // 0x02
+            mesha_ui_button,          // 0x03
+            mesha_ui_same_line,       // 0x04
             nullptr,
-            mesha_ui_button,          // 0x04
-            mesha_ui_same_line,       // 0x05
             nullptr,
             nullptr,
             nullptr,
