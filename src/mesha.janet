@@ -211,7 +211,6 @@
       (let [id (get rest 0)
             view (get views id)
             view-msg (tuple/slice rest 1)]
-        (printf "Rest of message: %q" rest)
         (:update view [view-msg payload])
         (->> (encode-view view)
              (enqueue-command :push-view id)))
