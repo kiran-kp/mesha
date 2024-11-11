@@ -168,8 +168,8 @@
     (fn [self msg]
       (printf "Updating view: %q" msg)
       (match msg
-        [:increment-counter] (put self :counter (+ 1 (get self :counter)))
-        [[:show-demo-window] val] (put self :show-demo-window (= 1 val))
+        [[:increment-counter]] (put self :counter (+ 1 (get self :counter)))
+        [[:show-demo-window] [val]] (put self :show-demo-window (= 1 val))
         [:f-slider] (put self :f (get msg 2))))
     :view
     (fn [self]

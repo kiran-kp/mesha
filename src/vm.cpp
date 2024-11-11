@@ -124,13 +124,23 @@ static auto get_message(int32_t argc, Janet *argv) -> Janet {
                 uint8_t *bytes = msg.ui_message.payload.data;
                 std::tie(num_payload_items, bytes) = read_int32(bytes);
 
-                auto jmsg = janet_tuple_begin(num_payload_items + 1);
+                auto jmsg = janet_tuple_begin(2);
                 jmsg[0] = jmsg_key;
-                for  (int i = 0; i < num_payload_items; i++) {
-                    Janet item;
-                    std::tie(item, bytes) = read_ui_message_payload_item(bytes);
-                    jmsg[i + 1] = item;
+                if (num_payload_items > 0) {
+                    auto jpayload = janet_tuple_begin(num_payload_items);
+
+                    for  (int i = 0; i < num_payload_items; i++) {
+                        Janet item;
+                        std::tie(item, bytes) = read_ui_message_payload_item(bytes);
+                        jpayload[i] = item;
+                    }
+
+                    auto tup = janet_tuple_end(jpayload);
+                    jmsg[1] = janet_wrap_tuple(tup);
+                } else {
+                    jmsg[1] = janet_wrap_nil();
                 }
+
                 auto tup = janet_tuple_end(jmsg);
                 delete msg.ui_message.payload.data;
 
