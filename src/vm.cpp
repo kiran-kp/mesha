@@ -117,6 +117,10 @@ static auto get_message(int32_t argc, Janet *argv) -> Janet {
     Janet result;
     {
         switch (msg.type) {
+            case Message::Type::UiReady: {
+                result = janet_wrap_keyword(janet_ckeyword("ui-ready"));
+                break;
+            }
             case Message::Type::UiMessage: {
                 auto jmsg_key = read_message_key(msg.ui_message.key);
 
@@ -148,8 +152,8 @@ static auto get_message(int32_t argc, Janet *argv) -> Janet {
 
                 break;
             }
-            case Message::Type::UiReady: {
-                result = janet_wrap_keyword(janet_ckeyword("ui-ready"));
+            case Message::Type::Quit: {
+                result = janet_wrap_keyword(janet_ckeyword("quit"));
                 break;
             }
             default:

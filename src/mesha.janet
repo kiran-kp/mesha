@@ -197,6 +197,7 @@
 
 (defn do-update
   []
+  (var should-continue true)
   (let [msg (get-message)]
     (printf "Got message %q" msg)
     (match msg
@@ -204,6 +205,8 @@
       (do
         (push-view main-window)
         (enqueue-command :push-view (get main-window :id) (encode-view main-window)))
+      :quit
+      (set should-continue false)
       [[:ui-message & rest] payload]
       (let [id (get rest 0)
             view (get views id)
@@ -213,13 +216,14 @@
         (->> (encode-view view)
              (enqueue-command :push-view id)))
       _
-      (printf "Unknown message: %q" msg))))
+      (printf "Unknown message: %q" msg)))
+  should-continue)
 
 (defn main
   [args]
   "Entry point for Mesha"
   (setdyn *args* args)
   (enqueue-command :init-ui)
-  (let [quit? false]
-    (while (not quit?)
-      (do-update))))
+  (forever
+    (if (not (do-update))
+      (break))))

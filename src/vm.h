@@ -71,7 +71,8 @@ struct Message {
     enum class Type : int32_t {
         Invalid,
         UiReady,
-        UiMessage
+        UiMessage,
+        Quit
     } type;
 
     union {
@@ -92,6 +93,12 @@ struct Message {
         Message msg;
         msg.type = Type::UiMessage;
         msg.ui_message = std::move(ui_msg);
+        return msg;
+    }
+
+    static auto quit_msg() -> Message {
+        Message msg;
+        msg.type = Type::Quit;
         return msg;
     }
 };

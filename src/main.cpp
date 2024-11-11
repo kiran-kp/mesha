@@ -81,6 +81,7 @@ auto main(int argc, char **argv) -> int {
         }
     }
 
+    message_queue.enqueue(Message::quit_msg());
     script_thread.join();
     return 0;
 }
