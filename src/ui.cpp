@@ -317,12 +317,12 @@ auto mesha_ui_process_view(Ui &ui, uint8_t *bytes, std::vector<UiMessage>& messa
         uint8_t op;
         std::tie(op, bytes) = read_byte(bytes);
         UiFunction ops[256] = {
-            mesha_ui_begin_window,
-            mesha_ui_text,
-            mesha_ui_checkbox,
+            mesha_ui_begin_window,    // 0x00
+            mesha_ui_text,            // 0x01
+            mesha_ui_checkbox,        // 0x02
             nullptr,
-            mesha_ui_button,
-            mesha_ui_same_line,
+            mesha_ui_button,          // 0x04
+            mesha_ui_same_line,       // 0x05
             nullptr,
             nullptr,
             nullptr,
@@ -572,7 +572,7 @@ auto mesha_ui_process_view(Ui &ui, uint8_t *bytes, std::vector<UiMessage>& messa
             nullptr,
             nullptr,
             nullptr,
-            mesha_ui_end_window,
+            mesha_ui_end_window,   // 0xFF
         };
         
         if (ops[op] != nullptr) {
