@@ -170,7 +170,7 @@
       (match msg
         [[:increment-counter]] (put self :counter (+ 1 (get self :counter)))
         [[:show-demo-window] [val]] (put self :show-demo-window (= 1 val))
-        [:f-slider] (put self :f (get msg 2))))
+        [[:f-slider] [val]] (put self :f val)))
     :view
     (fn [self]
       [:window {:width 640
@@ -180,13 +180,12 @@
                 :flags [:menu-bar]}
        "Mesha"
        [:text (string/format "This is some text: %d" (get self :counter))]
+       [:same-line]
+       [:button "Button" :increment-counter]
        [:checkbox "Checkbox demo" (get self :show-demo-window) :show-demo-window]
        (if (get self :show-demo-window)
         [:text "This is some dynamic updates to the window"])
        # [:slider-float "float" :f-slider]
-       [:button "Button" :increment-counter]
-       # [:same-line]
-       # [:text "counter = %d" (get self :counter)]
       ])})
 
 (def views

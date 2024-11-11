@@ -303,6 +303,11 @@ auto mesha_ui_button(uint8_t *bytes) -> UiResult {
     return result;
 }
 
+auto mesha_ui_same_line(uint8_t *bytes) -> UiResult {
+    ImGui::SameLine();
+    return std::make_pair(std::nullopt, bytes);
+}
+
 auto mesha_ui_process_view(Ui &ui, uint8_t *bytes, std::vector<UiMessage>& messages) -> void {
     int32_t view_length;
     uint8_t *start = bytes;
@@ -317,7 +322,7 @@ auto mesha_ui_process_view(Ui &ui, uint8_t *bytes, std::vector<UiMessage>& messa
             mesha_ui_checkbox,
             nullptr,
             mesha_ui_button,
-            nullptr,
+            mesha_ui_same_line,
             nullptr,
             nullptr,
             nullptr,
