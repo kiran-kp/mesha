@@ -279,6 +279,30 @@ auto mesha_ui_checkbox(uint8_t *bytes) -> UiResult {
     return result;
 }
 
+auto mesha_ui_button(uint8_t *bytes) -> UiResult {
+    std::string_view label_str;
+    std::tie(label_str, bytes) = read_string(bytes);
+
+    bool pressed = ImGui::Button(label_str.data());
+
+    UiMessageKey key;
+    std::tie(key, bytes) = read_message_key(bytes);
+
+    UiResult result;
+    result.first = std::nullopt;
+    result.second = bytes;
+    if (pressed) {
+        UiMessage message;
+        message.key = key;
+        message.payload.size = 0;
+        message.payload.data = new uint8_t[sizeof(int32_t)];
+        write_integer(message.payload, 0);
+        result.first = std::make_optional(message);
+    }
+
+    return result;
+}
+
 auto mesha_ui_process_view(Ui &ui, uint8_t *bytes, std::vector<UiMessage>& messages) -> void {
     int32_t view_length;
     uint8_t *start = bytes;
@@ -292,7 +316,7 @@ auto mesha_ui_process_view(Ui &ui, uint8_t *bytes, std::vector<UiMessage>& messa
             mesha_ui_text,
             mesha_ui_checkbox,
             nullptr,
-            nullptr,
+            mesha_ui_button,
             nullptr,
             nullptr,
             nullptr,

@@ -166,6 +166,7 @@
     :id :main-window
     :update
     (fn [self msg]
+      (printf "Updating view: %q" msg)
       (match msg
         [:increment-counter] (put self :counter (+ 1 (get self :counter)))
         [[:show-demo-window] val] (put self :show-demo-window (= 1 val))
@@ -178,12 +179,12 @@
                 :y 0
                 :flags [:menu-bar]}
        "Mesha"
-       [:text "This is some text"]
+       [:text (string/format "This is some text: %d" (get self :counter))]
        [:checkbox "Checkbox demo" (get self :show-demo-window) :show-demo-window]
        (if (get self :show-demo-window)
         [:text "This is some dynamic updates to the window"])
        # [:slider-float "float" :f-slider]
-       # [:button "Button" :increment-counter]
+       [:button "Button" :increment-counter]
        # [:same-line]
        # [:text "counter = %d" (get self :counter)]
       ])})
@@ -199,7 +200,7 @@
 (defn do-update
   []
   (let [msg (get-message)]
-    (print "Got message")
+    (printf "Got message %q" msg)
     (match msg
       :ui-ready
       (do
@@ -209,10 +210,12 @@
       (let [id (get rest 0)
             view (get views id)
             view-msg (tuple/slice rest 1)]
+        (printf "Rest of message: %q" rest)
         (:update view [view-msg payload])
-        (enqueue-command :push-view (get main-window :id)  (encode-view main-window)))
+        (->> (encode-view view)
+             (enqueue-command :push-view id)))
       _
-      (printf "Unknown message: %P" msg))))
+      (printf "Unknown message: %q" msg))))
 
 (defn main
   [args]
