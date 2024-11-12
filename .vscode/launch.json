@@ -4,6 +4,7 @@
         {
             "name": "(lldb) Launch",
             "type": "cppdbg",
+            "preLaunchTask": "CMake: build",
             "request": "launch",
             "program": "${workspaceFolder}/build/mesha",
             "args": [],
