@@ -196,12 +196,12 @@ auto mesha_vm_init(Vm &vm, const VmInitArgs &args) -> void {
     janet_cfuns(impl->env, "native", cfuns);
 
     // Load boot script
-    auto boot_file = slurp("../src/mesha.janet");
+    auto boot_file = slurp("application/mesha.janet");
     Janet output;
     janet_dobytes(impl->env,
                   reinterpret_cast<const uint8_t*>(boot_file.c_str()),
                   static_cast<int32_t>(boot_file.length()),
-                  "../src/mesha.janet",
+                  "application/mesha.janet",
                   &output);
 
     the_vm = &vm;

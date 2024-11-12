@@ -9,7 +9,7 @@
             "program": "${workspaceFolder}/build/mesha",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
+            "cwd": "${workspaceFolder}",
             "environment": [{"name": "GDK_BACKEND", "value": "wayland"}],
             "externalConsole": false,
             "MIMode": "gdb"

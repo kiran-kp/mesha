@@ -15,9 +15,9 @@ else()
   find_package(SDL2 REQUIRED CONFIG COMPONENTS SDL2main)
 endif()
 
-add_executable(mesha src/main.cpp
-                     src/ui.cpp
-                     src/vm.cpp
+add_executable(mesha engine/main.cpp
+                     engine/ui.cpp
+                     engine/vm.cpp
                      # imgui
                      extern/imgui/imgui.cpp
                      extern/imgui/imgui_draw.cpp
@@ -32,7 +32,7 @@ set_property(TARGET mesha PROPERTY CXX_STANDARD 17)
 
 
 # Dear ImGUI
-target_include_directories(mesha PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
+target_include_directories(mesha PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/engine"
                                          "${CMAKE_CURRENT_SOURCE_DIR}/extern/imgui"
                                          "${CMAKE_CURRENT_SOURCE_DIR}/extern/imgui/backends"
                                          "${CMAKE_CURRENT_SOURCE_DIR}/extern/janet/build/"
