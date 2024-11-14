@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(lldb) Launch",
+            "name": "(gdb) Launch",
             "type": "cppdbg",
             "preLaunchTask": "CMake: build",
             "request": "launch",
@@ -13,6 +13,19 @@
             "environment": [{"name": "GDK_BACKEND", "value": "wayland"}],
             "externalConsole": false,
             "MIMode": "gdb"
+        },
+        {
+            "name": "(lldb) Launch",
+            "type": "cppdbg",
+            "preLaunchTask": "CMake: build",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/mesha",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb"
         }
     ]
 }
