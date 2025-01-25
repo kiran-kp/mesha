@@ -38,9 +38,9 @@
     (printf "Got message %q" msg)
     (match msg
       :ui-ready
-      (do
+      (comment (do
         (view/submit main-window)
-        (enqueue-command :push-view (get main-window :id) (view/encode main-window)))
+        (enqueue-command :push-view (get main-window :id) (view/encode main-window))))
       :quit
       (set should-continue false)
       [[:ui-message & rest] payload]
