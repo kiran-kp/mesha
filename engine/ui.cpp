@@ -337,15 +337,20 @@ auto mesha_ui_document() -> void {
         for (Node& node : doc.nodes) {
             float x = ImGui::GetCursorPosX();
             float y = ImGui::GetCursorPosY();
+
             ImGui::Dummy(ImVec2(io.DisplaySize.x, node.height));
             bool is_hovered = ImGui::IsItemHovered();
+
             ImGui::SetCursorPos(ImVec2(x, y));
+
             ImGui::TextColored(is_hovered ? ImColor(255, 0, 0, 255) : ImColor(255, 255, 255, 255),
                                "%s",
                                node.text.c_str());
+
             float end_y = ImGui::GetCursorPosY();
             constexpr float padding = 10.0f;
             node.height = (end_y - y) + padding;
+
             ImGui::Dummy(ImVec2(io.DisplaySize.x, padding));
             ImGui::Separator();
         }
