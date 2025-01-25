@@ -69,6 +69,7 @@ auto main(int argc, char **argv) -> int {
         // Update UI
         if (ui.is_initialized) {
             mesha_ui_begin_frame(ui);
+            mesha_ui_document();
             mesha_ui_process_views(ui, messages);
 
             for (auto& message : messages) {

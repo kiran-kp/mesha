@@ -308,6 +308,52 @@ auto mesha_ui_same_line(uint8_t *bytes) -> UiResult {
     return std::make_pair(std::nullopt, bytes);
 }
 
+auto mesha_ui_document() -> void {
+    struct Node {
+        std::string text;
+        float height;
+    };
+
+    struct Document {
+        std::vector<Node> nodes;
+    };
+
+    static Document doc = {
+        {
+            {"Hello, world! 0", 0.0f},
+            {"Hello, World! 1", 0.0f},
+            {"This is some sample text.", 0.0f},
+            {"This is some more sample text.", 0.0f},
+            {"This is some longer sample text and it spans multiple lines.\nCheck out the second line of text.\nAnd a third.", 0.0f},
+            {"This is the last sample text.", 0.0f}
+        }
+    };
+
+    const ImGuiIO& io = ImGui::GetIO();
+    ImDrawList *draw_list = ImGui::GetForegroundDrawList();
+    ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y));
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    if (ImGui::Begin("Document", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoNav)) {
+        for (Node& node : doc.nodes) {
+            float x = ImGui::GetCursorPosX();
+            float y = ImGui::GetCursorPosY();
+            ImGui::Dummy(ImVec2(io.DisplaySize.x, node.height));
+            bool is_hovered = ImGui::IsItemHovered();
+            ImGui::SetCursorPos(ImVec2(x, y));
+            ImGui::TextColored(is_hovered ? ImColor(255, 0, 0, 255) : ImColor(255, 255, 255, 255),
+                               "%s",
+                               node.text.c_str());
+            float end_y = ImGui::GetCursorPosY();
+            constexpr float padding = 10.0f;
+            node.height = (end_y - y) + padding;
+            ImGui::Dummy(ImVec2(io.DisplaySize.x, padding));
+            ImGui::Separator();
+        }
+    }
+
+    ImGui::End();
+}
+
 auto mesha_ui_process_view(Ui &ui, uint8_t *bytes, std::vector<UiMessage>& messages) -> void {
     int32_t view_length;
     uint8_t *start = bytes;
