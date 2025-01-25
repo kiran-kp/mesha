@@ -1,7 +1,6 @@
+#include <imgui.h>
 #include <ui.h>
 #include <vm.h>
-
-#include <imgui.h>
 
 #include <thread>
 #include <vector>
@@ -16,15 +15,17 @@ auto script_thread_fn(const VmInitArgs &args) -> void {
 auto show_main_menu_bar() -> void {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("Exit", "Alt+F4")) { /* Do something */ }
+            if (ImGui::MenuItem("Exit", "Alt+F4")) { /* Do something */
+            }
             ImGui::EndMenu();
         }
-        
+
         if (ImGui::BeginMenu("Help")) {
-            if (ImGui::MenuItem("About")) { /* Do something */ }
+            if (ImGui::MenuItem("About")) { /* Do something */
+            }
             ImGui::EndMenu();
         }
-        
+
         ImGui::EndMainMenuBar();
     }
 }
@@ -45,18 +46,18 @@ auto main(int argc, char **argv) -> int {
     std::vector<UiMessage> messages;
     bool should_quit = false;
 
-    while (!should_quit && !ui.should_quit) {
+    while (!should_quit && !ui.m_should_quit) {
         // Process commands
         Command cmd;
-        if (command_queue.wait_dequeue_timed(cmd, 
+        if (command_queue.wait_dequeue_timed(cmd,
                                              std::chrono::milliseconds(10))) {
             switch (cmd.type) {
                 case Command::Type::InitUi:
-                    mesha_ui_init(ui);
+                    ui.init();
                     message_queue.enqueue(Message::ui_ready_msg());
                     break;
                 case Command::Type::PushView:
-                    mesha_ui_push_view(ui, cmd.push_view.id, cmd.push_view.bytecode);
+                    ui.push_view(cmd.push_view.id, cmd.push_view.bytecode);
                     break;
                 case Command::Type::Quit:
                     should_quit = true;
@@ -67,18 +68,19 @@ auto main(int argc, char **argv) -> int {
         }
 
         // Update UI
-        if (ui.is_initialized) {
-            mesha_ui_begin_frame(ui);
-            mesha_ui_document();
-            mesha_ui_process_views(ui, messages);
+        if (ui.m_is_initialized) {
+            ui.begin_frame();
+            ui.document();
+            ui.process_views(messages);
 
-            for (auto& message : messages) {
-                message_queue.enqueue(Message::ui_message_msg(std::move(message)));
+            for (auto &message : messages) {
+                message_queue.enqueue(
+                    Message::ui_message_msg(std::move(message)));
             }
 
             messages.clear();
 
-            mesha_ui_end_frame(ui);
+            ui.end_frame();
         }
     }
 
