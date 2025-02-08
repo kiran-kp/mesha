@@ -1,6 +1,6 @@
-#include <SDL.h>
-#include <imgui_impl_sdl2.h>
-#include <imgui_impl_sdlrenderer2.h>
+#include <SDL3/SDL.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_sdlrenderer3.h>
 #include <ui.h>
 
 #include <cstdio>
@@ -22,36 +22,19 @@ Ui::Ui() = default;
 Ui::~Ui() = default;
 
 auto Ui::init() -> bool {
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) !=
-        0) {
-        printf("Error: %s\n", SDL_GetError());
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
         return false;
     }
-
-#ifdef SDL_HINT_IME_SHOW_UI
-    SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
-#endif
 
     m_impl.reset(new Impl);
     m_should_quit = false;
 
     // Create window with SDL_Renderer graphics context
     SDL_WindowFlags window_flags =
-        (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-    m_impl->window =
-        SDL_CreateWindow("Mesha", SDL_WINDOWPOS_CENTERED,
-                         SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
-    if (m_impl->window == nullptr) {
-        printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
-        return false;
-    }
+        (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
 
-    m_impl->renderer = SDL_CreateRenderer(
-        m_impl->window, -1,
-        SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
-    if (m_impl->renderer == nullptr) {
-        SDL_Log("Error creating SDL_Renderer!");
-        return false;
+    if (!SDL_CreateWindowAndRenderer("Mesha", 800, 600, 0, &m_impl->window, &m_impl->renderer)) {
+        return SDL_APP_FAILURE;
     }
 
     IMGUI_CHECKVERSION();
@@ -65,8 +48,8 @@ auto Ui::init() -> bool {
     ImGui::StyleColorsDark();
     // ImGui::StyleColorsLight();
 
-    ImGui_ImplSDL2_InitForSDLRenderer(m_impl->window, m_impl->renderer);
-    ImGui_ImplSDLRenderer2_Init(m_impl->renderer);
+    ImGui_ImplSDL3_InitForSDLRenderer(m_impl->window, m_impl->renderer);
+    ImGui_ImplSDLRenderer3_Init(m_impl->renderer);
 
     m_is_initialized = true;
 
@@ -74,8 +57,8 @@ auto Ui::init() -> bool {
 }
 
 auto Ui::shutdown() -> void {
-    ImGui_ImplSDLRenderer2_Shutdown();
-    ImGui_ImplSDL2_Shutdown();
+    ImGui_ImplSDLRenderer3_Shutdown();
+    ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
 
     SDL_DestroyRenderer(m_impl->renderer);
@@ -90,13 +73,12 @@ auto Ui::begin_frame() -> bool {
     bool done = false;
     auto window = m_impl->window;
     while (SDL_PollEvent(&event)) {
-        ImGui_ImplSDL2_ProcessEvent(&event);
-        if (event.type == SDL_QUIT) {
+        ImGui_ImplSDL3_ProcessEvent(&event);
+        if (event.type == SDL_EVENT_QUIT) {
             done = true;
         }
 
-        if (event.type == SDL_WINDOWEVENT &&
-            event.window.event == SDL_WINDOWEVENT_CLOSE &&
+        if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
             event.window.windowID == SDL_GetWindowID(window)) {
             done = true;
         }
@@ -109,8 +91,8 @@ auto Ui::begin_frame() -> bool {
 
     m_should_quit = done;
 
-    ImGui_ImplSDLRenderer2_NewFrame();
-    ImGui_ImplSDL2_NewFrame();
+    ImGui_ImplSDLRenderer3_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
     return !done;
@@ -123,13 +105,13 @@ auto Ui::end_frame() -> void {
     auto renderer = m_impl->renderer;
 
     ImGui::Render();
-    SDL_RenderSetScale(renderer, io.DisplayFramebufferScale.x,
+    SDL_SetRenderScale(renderer, io.DisplayFramebufferScale.x,
                        io.DisplayFramebufferScale.y);
     SDL_SetRenderDrawColor(
         renderer, (Uint8)(clear_color.x * 255), (Uint8)(clear_color.y * 255),
         (Uint8)(clear_color.z * 255), (Uint8)(clear_color.w * 255));
     SDL_RenderClear(renderer);
-    ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
+    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
     SDL_RenderPresent(renderer);
 }
 
