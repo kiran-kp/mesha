@@ -3,7 +3,10 @@
 #include <imgui_impl_sdlrenderer3.h>
 #include <ui.h>
 
+#include <chrono>
 #include <cstdio>
+#include <format>
+#include <iostream>
 #include <optional>
 #include <string_view>
 #include <unordered_map>
@@ -313,33 +316,51 @@ auto same_line(uint8_t *bytes) -> UiResult {
 auto Ui::document() -> void {
     struct Node {
         std::string text;
-        float height;
+        float height = 0.0f;
+        int64_t timestamp = 1739140551;
     };
 
     struct Document {
         std::vector<Node> nodes;
     };
 
+    // int64_t timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    // std::cout << std::format("{}", timestamp) << std::endl;
+
     static Document doc = {
-        {{"Hello, world! 0", 0.0f},
-         {"Hello, World! 1", 0.0f},
-         {"This is some sample text.", 0.0f},
-         {"This is some more sample text.", 0.0f},
+        {{"Hello, world! 0"},
+         {"Hello, World! 1"},
+         {"This is some sample text."},
+         {"This is some more sample text."},
          {"This is some longer sample text and it spans multiple lines.\nCheck "
-          "out the second line of text.\nAnd a third.",
-          0.0f},
-         {"This is the last sample text.", 0.0f}}};
+          "out the second line of text.\nAnd a third."},
+         {"This is the last sample text."},
+         {"Some more lines of text.\nThis is also multiline text.\nAnd a third line."},
+         {"This is another line of text."},
+         {"Even more text"},
+         {"This is the last line of text."},
+         {"How about this really tall pice of text?\nThere are 5 lines here.\n"
+          "This is the third line.\nThis is the fourth line.\nThis is the fifth line."},
+         {"A little line of text."},
+         {"Another line of text."},
+         {"This is the last line of text."}}};
 
     const ImGuiIO &io = ImGui::GetIO();
     ImDrawList *draw_list = ImGui::GetForegroundDrawList();
     ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y));
     ImGui::SetNextWindowPos(ImVec2(0, 0));
-    if (ImGui::Begin("Document", nullptr,
-                     ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-                         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
-                         ImGuiWindowFlags_NoBringToFrontOnFocus |
-                         ImGuiWindowFlags_NoNavFocus |
-                         ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoNav)) {
+
+    auto flags = ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoBringToFrontOnFocus |
+        ImGuiWindowFlags_NoNavFocus |
+        ImGuiWindowFlags_NoDocking |
+        ImGuiWindowFlags_NoNav |
+        ImGuiWindowFlags_NoScrollbar;
+
+    if (ImGui::Begin("Document", nullptr, flags)) {
         for (Node &node : doc.nodes) {
             float x = ImGui::GetCursorPosX();
             float y = ImGui::GetCursorPosY();
@@ -348,6 +369,10 @@ auto Ui::document() -> void {
             bool is_hovered = ImGui::IsItemHovered();
 
             ImGui::SetCursorPos(ImVec2(x, y));
+
+            std::chrono::system_clock::time_point t{std::chrono::seconds{node.timestamp}};
+            auto local_time = std::chrono::current_zone()->to_local(t);
+            ImGui::TextUnformatted(std::format("{:%Y-%m-%d %R}", local_time).c_str());
 
             ImGui::TextColored(is_hovered ? ImColor(255, 0, 0, 255)
                                           : ImColor(255, 255, 255, 255),
