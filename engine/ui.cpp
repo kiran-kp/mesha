@@ -369,11 +369,12 @@ auto Ui::document() -> void {
 
             std::chrono::system_clock::time_point t{std::chrono::seconds{node.timestamp}};
             auto local_time = std::chrono::current_zone()->to_local(t);
-            ImGui::TextColored(ImColor(155, 155, 155, 255), std::format("{:%Y-%m-%d %R}", local_time).c_str());
+            auto timestamp_str = std::format("{:%Y-%m-%d %R}", local_time);
+            ImGui::TextColored(ImColor(155, 155, 155, 255), "%s", timestamp_str.c_str());
 
-            ImGui::TextColored(is_hovered ? ImColor(255, 0, 0, 255)
-                                          : ImColor(255, 255, 255, 255),
-                               "%s", node.text.c_str());
+            ImGui::TextColored(is_hovered ? ImColor(255, 0, 0, 255) : ImColor(255, 255, 255, 255),
+                               "%s",
+                               node.text.c_str());
 
             float end_y = ImGui::GetCursorPosY();
             constexpr float padding = 10.0f;
