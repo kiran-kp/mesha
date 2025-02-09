@@ -16,7 +16,7 @@ add_executable(mesha engine/main.cpp
                      # janet
                      extern/janet/build/c/janet.c)
 
-set_property(TARGET mesha PROPERTY CXX_STANDARD 17)
+set_property(TARGET mesha PROPERTY CXX_STANDARD 20)
 
 
 target_include_directories(mesha PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/engine"
