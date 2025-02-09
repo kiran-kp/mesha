@@ -2,3 +2,5 @@ build
 TAGS
 imgui.ini
 .vscode/settings.json
+.aider*
+.cache
