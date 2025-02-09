@@ -324,9 +324,6 @@ auto Ui::document() -> void {
         std::vector<Node> nodes;
     };
 
-    // int64_t timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    // std::cout << std::format("{}", timestamp) << std::endl;
-
     static Document doc = {
         {{"Hello, world! 0"},
          {"Hello, World! 1"},
