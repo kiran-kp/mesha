@@ -24,4 +24,5 @@
                #:3d-vectors
                #:bordeaux-threads
                #:str
-               #:trivia))
+               #:trivia
+               #:cl-dbi))
