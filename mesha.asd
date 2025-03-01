@@ -25,4 +25,6 @@
                #:bordeaux-threads
                #:str
                #:trivia
-               #:cl-dbi))
+               #:cl-dbi
+               #:frugal-uuid
+               #:sxql))
