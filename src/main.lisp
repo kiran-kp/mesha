@@ -1,5 +1,33 @@
 (in-package #:mesha)
 
+;; <2025-03-01 Sat>
+;;
+;; Core of the tool is to store a tree of "content" nodes in a database and be able to
+;; visualize it in a keyboard friendly UI.
+;;
+;; I've waffled between GUI solutions a lot and even considered switching away from Common
+;; Lisp at one point. I think this was a mistake though.  I like the CL developer
+;; experience a lot more than anything else I've tried.
+;;
+;; I've also restarted the project several times so far. The basic idea has remained the
+;; same but my thoughts on how visualization and editing should work have changed. I
+;; started off thinking that a spreadsheet editor like Treesheets is what I would want to
+;; interact with but the implementation is lot more complicated for the feature set I want
+;; and I dont' have the time to maintain something like that. It will also require a lot
+;; of time spent on design which I simply do not think I will actually do.
+;;
+;; What I have settled on instead is a continuous document that displays the nodes as a
+;; tree you can expand as necessary. My default use case is a journal so I think the top
+;; level notes will be dates and children will be headings under that. I think making this
+;; configurable somehow will cover a lot of the same ground that my original vision of a
+;; general spreadsheet would have.
+;;
+;; For the GUI I am more confident in my abilities now and think I will implement an
+;; immediate mode GUI myself in pure lisp. SDL3's GPU API makes this easier to do
+;; cross-platform. I know this will make the overall project take longer but I think the
+;; long term benefits are pretty good. Being immediate mode also means reactivity is
+;; easier to implement.
+
 (defclass ring-buffer ()
   ((items :initarg :items)
    (start :initform 0)
