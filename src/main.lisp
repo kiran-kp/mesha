@@ -134,13 +134,16 @@ when `end` is updated in ring-buffer-push"))
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (sb-int:set-floating-point-modes :traps nil))
 
+(defun init-sdl ()
+  (sdl3:init :video)
+  (let ((window (sdl::create-window "Test" 800 600 :high-pixel-density)))
+    (sdl::flash-window window :until-focused)))
+
 (defun main ()
   (format t "Mesha init")
   (setf *db*
         (dbi:connect :sqlite3
                      :database-name (asdf:system-relative-pathname 'mesha "notes.mesha")))
-  (tmt:with-body-in-main-thread (:blocking t)
-    (format t "Main thread: ~a" (sdl::is-main-thread))
-    (sdl3:init :video)
-    (let ((window (sdl::create-window "Test" 800 600 :high-pixel-density)))
-      (sdl::flash-window window :until-focused))))
+  (if (string-equal (software-type) "Darwin")
+      (tmt:with-body-in-main-thread (:blocking t) (init-sdl))
+      (init-sdl)))
