@@ -17,14 +17,17 @@
   :build-operation "program-op"
   :build-pathname "../mesha"
   :entry-point "mesha:main"
-  :components ((:file "package")
+  :components ((:file "sdl3")
+               (:file "package")
                (:file "main"))
   :depends-on (#:alexandria
                #:serapeum
+               #:cffi
                #:3d-vectors
                #:bordeaux-threads
                #:str
                #:trivia
                #:cl-dbi
                #:frugal-uuid
-               #:sxql))
+               #:sxql
+               #:trivial-main-thread))

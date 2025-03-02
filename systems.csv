@@ -81,3 +81,5 @@ trivial-types, ghcr.io/ocicl/trivial-types@sha256:6c7e66c7a2c7b190cf31a78597a1de
 named-readtables, ghcr.io/ocicl/named-readtables@sha256:c13ae35d957cf55f8c877762a24537daee5e8322d9968b14f8c86e8cfc1b2df3, named-readtables-20230809-2c05652/named-readtables.asd
 cl-package-locks, ghcr.io/ocicl/cl-package-locks@sha256:3cc3430aa866786164cd64110795ba329d72cd98f6606a72a83b04c1dc295a0d, cl-package-locks-20240503-96a358e/cl-package-locks.asd
 frugal-uuid, ghcr.io/ocicl/frugal-uuid@sha256:ff8f12afd979ae0812f3d5b162ea458ce63dacf5aa0b81fefb3aacd96309c970, cl-frugal-uuid-20241018-9e766a7/frugal-uuid.asd
+trivial-main-thread, ghcr.io/ocicl/trivial-main-thread@sha256:e74a922b36b1f2dfb12bbe85f3b11dac87411b6f95150653a954fe5594271598, trivial-main-thread-20250209-19f6c40/trivial-main-thread.asd
+slynk, ghcr.io/ocicl/slynk@sha256:94a927f09f1aadd797c301dcef6c8cd2a9789a29326bbb643112a93bbc996d15, sly-20250207-c48defcf/slynk/slynk.asd
